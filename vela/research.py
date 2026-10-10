@@ -64,6 +64,7 @@ class ResearchData:
     R: np.ndarray            # open-to-open execution returns
     sigma: np.ndarray        # trailing 21d daily vol (close-to-close), for impact and vol weighting
     adv: np.ndarray          # trailing 21d median dollar volume
+    beta: np.ndarray         # trailing 252d beta to the EW tradable universe
     bench_R: pd.DataFrame    # benchmark open-to-open returns (SPY, ^GSPC, EW universe)
     _fwd: dict = field(default_factory=dict)
 
@@ -86,13 +87,20 @@ class ResearchData:
         sigma = np.full_like(panel.close, np.nan)
         sigma[1:] = pd.DataFrame(lr).rolling(21, min_periods=15).std().values
         adv = rolling_median_dollar_volume(panel)
+        mkt = np.nanmean(np.where(U[1:], lr, np.nan), axis=1)
+        lr_df = pd.DataFrame(lr)
+        m_df = pd.Series(mkt)
+        cov = lr_df.mul(m_df, axis=0).rolling(252, min_periods=126).mean() - \
+            lr_df.rolling(252, min_periods=126).mean().mul(m_df.rolling(252, min_periods=126).mean(), axis=0)
+        beta = np.full_like(panel.close, np.nan)
+        beta[1:] = cov.div(m_df.rolling(252, min_periods=126).var(ddof=0), axis=0).values
         bo = panel.benchmark_opens
         bench = pd.DataFrame(index=panel.dates)
         for c in bo.columns:
             bench[c] = (bo[c].shift(-1) / bo[c] - 1).values
         # equal-weighted tradable universe, timed exactly like a strategy (zero cost)
         bench["EW"] = run_backtest(P.equal_weight_universe(U), R, panel.dates, CostModel.zero()).gross
-        return cls(panel, U, feats, R, sigma, adv, bench)
+        return cls(panel, U, feats, R, sigma, adv, beta, bench)
 
 
 # --------------------------------------------------------------- configuration
@@ -206,6 +214,8 @@ class StrategySpec:
     rebalance: int = 1          # days between rebalances
     smooth_halflife: float | None = None
     vol_weight: bool = False
+    beta_neutral: bool = False
+    sizing: str = "equal"       # equal | inv_vol | sqrt_adv (hysteresis books)
 
 
 def build_weights(scores: np.ndarray, data: ResearchData, spec: StrategySpec) -> tuple[np.ndarray, np.ndarray | None]:
@@ -218,11 +228,15 @@ def build_weights(scores: np.ndarray, data: ResearchData, spec: StrategySpec) ->
     elif spec.kind == "lo":
         W = P.long_only_top(s, U, spec.q, vol=vol)
     elif spec.kind == "ls_hyst":
-        W = P.hysteresis_long_short(s, U, spec.q, spec.exit_q or 2 * spec.q)
+        W = P.hysteresis_long_short(s, U, spec.q, spec.exit_q or 2 * spec.q,
+                                    size=P.position_sizes(spec.sizing, data.sigma, data.adv))
     elif spec.kind == "lo_hyst":
-        W = P.hysteresis_long_only(s, U, spec.q, spec.exit_q or 2 * spec.q)
+        W = P.hysteresis_long_only(s, U, spec.q, spec.exit_q or 2 * spec.q,
+                                   size=P.position_sizes(spec.sizing, data.sigma, data.adv))
     else:
         raise ValueError(spec.kind)
+    if spec.beta_neutral and spec.kind.startswith("ls"):
+        W = P.beta_neutralise(W, data.beta)
     if spec.rebalance <= 1:
         return W, None
     return W, P.rebalance_mask(len(W), spec.rebalance)

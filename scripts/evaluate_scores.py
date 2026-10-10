@@ -28,6 +28,8 @@ SWEEP = {
     "ls_q10_r5_sm3": StrategySpec("ls", q=0.1, rebalance=5, smooth_halflife=3),
     "ls_hyst_10_30_r1": StrategySpec("ls_hyst", q=0.1, exit_q=0.3, rebalance=1),
     "ls_hyst_10_30_r5": StrategySpec("ls_hyst", q=0.1, exit_q=0.3, rebalance=5),
+    "ls_hyst_10_30_r5_bn": StrategySpec("ls_hyst", q=0.1, exit_q=0.3, rebalance=5, beta_neutral=True),
+    "ls_hyst_10_30_r1_bn": StrategySpec("ls_hyst", q=0.1, exit_q=0.3, rebalance=1, beta_neutral=True),
     # long-only
     "lo_q20_r5": StrategySpec("lo", q=0.2, rebalance=5),
     "lo_q10_r5": StrategySpec("lo", q=0.1, rebalance=5),

@@ -69,3 +69,53 @@ def test_paper_simulation_matches_vectorised_engine():
     eng_nav = 1e5 * np.cumprod(1 + eng.net[first_exec:-1])
     led_nav = val["nav"].values[first_exec + 1:]
     np.testing.assert_allclose(led_nav, eng_nav, rtol=2e-3)
+
+
+def test_track_portfolio_cli_end_to_end(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("tp", "scripts/track_portfolio.py")
+    tp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tp)
+    dates = pd.bdate_range("2021-01-04", periods=30)
+    rng = np.random.default_rng(0)
+    px = pd.DataFrame({"AAA": 100 * np.cumprod(1 + rng.normal(0, 0.01, 30)),
+                       "BBB": 50 * np.cumprod(1 + rng.normal(0, 0.01, 30)),
+                       "SPY": 300 * np.cumprod(1 + rng.normal(0, 0.008, 30))}, index=dates)
+    px.index.name = "date"
+    pd.DataFrame({"date": [dates[0], dates[10]], "ticker": ["AAA", "BBB"], "quantity": [50, 40],
+                  "price": [px["AAA"].iloc[0], px["BBB"].iloc[10]], "fees": [1.0, 1.0]}).to_csv(tmp_path / "t.csv", index=False)
+    pd.DataFrame({"date": [dates[0], dates[10]], "amount": [6000, 2000]}).to_csv(tmp_path / "c.csv", index=False)
+    px.to_csv(tmp_path / "p.csv")
+    L = Ledger.from_csv(tmp_path / "t.csv", tmp_path / "c.csv")
+    rep = tp.run(L, pd.read_csv(tmp_path / "p.csv", parse_dates=["date"], index_col="date"), "SPY", tmp_path / "out")
+    assert rep["net_deposits"] == pytest.approx(8000)
+    expected_nav = 8000 - 2 + 50 * (px["AAA"].iloc[-1] - px["AAA"].iloc[0]) + 40 * (px["BBB"].iloc[-1] - px["BBB"].iloc[10])
+    assert rep["final_nav"] == pytest.approx(expected_nav)
+    assert (tmp_path / "out" / "equity.png").exists()
+    assert "vs_bench_beta" in rep
+
+
+def test_live_adapter_parses_yfinance_frame():
+    """yfinance (auto_adjust, group_by='column') returns MultiIndex columns (field, ticker)."""
+    from vela.data.live import panel_from_yahoo_frame
+    dates = pd.bdate_range("2024-01-02", periods=5, tz="America/New_York")
+    fields_ = ["Close", "High", "Low", "Open", "Volume"]
+    cols = pd.MultiIndex.from_product([fields_, ["AAA", "SPY"]], names=["Price", "Ticker"])
+    raw = pd.DataFrame(np.arange(50, dtype=float).reshape(5, 10) + 1, index=dates, columns=cols)
+    p = panel_from_yahoo_frame(raw, ["AAA", "ZZZ"])
+    assert list(p.tickers) == ["AAA"]
+    np.testing.assert_allclose(p.close[:, 0], raw[("Close", "AAA")].values)
+    np.testing.assert_allclose(p.benchmarks["SPY"].values, raw[("Close", "SPY")].values)
+    assert p.dates.tz is None and p.member.all()
+
+
+def test_live_hysteresis_step_matches_rule():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ls", "scripts/live_signals.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    ranks = pd.Series({"A": 0.95, "B": 0.70, "C": 0.30, "D": 0.75})
+    held = pd.Series({"A": 0.0, "B": 3.0, "C": 2.0, "D": 0.0})
+    w = mod.hysteresis_targets(ranks, held, enter_q=0.2, exit_q=0.4, short=False)
+    # enter A (top 20%) and keep B (held, still above 60th pct); drop C; D (75th pct) is not held and below the entry band
+    assert set(w.index) == {"A", "B"} and w.sum() == pytest.approx(1.0)

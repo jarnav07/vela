@@ -88,12 +88,14 @@ def rebalance_every(W: np.ndarray, tradable: np.ndarray, k: int, offset: int = 0
 
 
 def hysteresis_long_short(scores: np.ndarray, tradable: np.ndarray, enter_q: float = 0.1, exit_q: float = 0.2,
-                          long_gross: float = 1.0, short_gross: float = 1.0, min_names: int = 50) -> np.ndarray:
+                          long_gross: float = 1.0, short_gross: float = 1.0, min_names: int = 50,
+                          size: np.ndarray | None = None) -> np.ndarray:
     """Buffered long-short book: enter at the top/bottom ``enter_q``, exit only beyond ``exit_q``.
 
     Holding a position until its rank deteriorates past a wider band cuts turnover
     a lot for a small loss of signal. This is a state machine over time (one loop over
-    dates, vectorised across stocks).
+    dates, vectorised across stocks). ``size`` (T x N, positive) gives relative position
+    sizes within a leg (e.g. inverse volatility or sqrt(ADV)); default equal weight.
     """
     r = _row_rank(scores, tradable)
     T, N = r.shape
@@ -109,16 +111,17 @@ def hysteresis_long_short(scores: np.ndarray, tradable: np.ndarray, enter_q: flo
             continue
         long_pos = ok & ((rt > 1 - enter_q) | (long_pos & (rt > 1 - exit_q)))
         short_pos = ok & ((rt <= enter_q) | (short_pos & (rt <= exit_q)))
-        nl, ns = long_pos.sum(), short_pos.sum()
-        if nl:
-            W[t, long_pos] = long_gross / nl
-        if ns:
-            W[t, short_pos] = -short_gross / ns
+        sz = np.ones(N) if size is None else np.nan_to_num(size[t], nan=0.0)
+        for pos, gross, sign in ((long_pos, long_gross, 1.0), (short_pos, short_gross, -1.0)):
+            w = np.where(pos, sz, 0.0)
+            tot = w.sum()
+            if tot > 0:
+                W[t] += sign * gross * w / tot
     return W
 
 
 def hysteresis_long_only(scores: np.ndarray, tradable: np.ndarray, enter_q: float = 0.2, exit_q: float = 0.4,
-                         min_names: int = 50) -> np.ndarray:
+                         min_names: int = 50, size: np.ndarray | None = None) -> np.ndarray:
     r = _row_rank(scores, tradable)
     T, N = r.shape
     pos = np.zeros(N, dtype=bool)
@@ -130,6 +133,40 @@ def hysteresis_long_only(scores: np.ndarray, tradable: np.ndarray, enter_q: floa
             pos[:] = False
             continue
         pos = ok & ((rt > 1 - enter_q) | (pos & (rt > 1 - exit_q)))
-        if pos.any():
-            W[t, pos] = 1.0 / pos.sum()
+        sz = np.ones(N) if size is None else np.nan_to_num(size[t], nan=0.0)
+        w = np.where(pos, sz, 0.0)
+        if w.sum() > 0:
+            W[t] = w / w.sum()
     return W
+
+
+def position_sizes(scheme: str, sigma: np.ndarray, adv: np.ndarray, cap: float = 3.0) -> np.ndarray | None:
+    """Relative within-leg sizes. ``inv_vol``: 1/sigma; ``sqrt_adv``: sqrt(ADV) (cheaper to trade
+    big in liquid names). Normalised per date to median 1, capped at ``cap`` x median."""
+    if scheme in (None, "equal"):
+        return None
+    if scheme == "inv_vol":
+        raw = 1.0 / np.where(sigma > 0, sigma, np.nan)
+    elif scheme == "sqrt_adv":
+        raw = np.sqrt(np.where(adv > 0, adv, np.nan))
+    else:
+        raise ValueError(scheme)
+    med = np.nanmedian(raw, axis=1, keepdims=True)
+    return np.clip(raw / med, 0, cap)
+
+
+def beta_neutralise(W: np.ndarray, beta: np.ndarray, max_scale: float = 2.0) -> np.ndarray:
+    """Rescale the short leg so that long-leg beta equals short-leg beta (row by row).
+
+    ``beta`` is each stock's trailing beta known at the signal date. The long leg is left
+    unchanged; the short leg is scaled by ``b_long / b_short``, clipped to [1/max_scale, max_scale].
+    """
+    b = np.nan_to_num(beta, nan=1.0)
+    longs = np.clip(W, 0, None)
+    shorts = np.clip(-W, 0, None)
+    b_long = (longs * b).sum(1)
+    b_short = (shorts * b).sum(1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        k = np.where(b_short > 0, b_long / b_short, 1.0)
+    k = np.clip(np.nan_to_num(k, nan=1.0), 1.0 / max_scale, max_scale)
+    return longs - shorts * k[:, None]

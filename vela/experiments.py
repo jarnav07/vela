@@ -38,3 +38,35 @@ def ml_v1():
 
 
 PRESETS["ml_v1"] = ml_v1
+
+
+def ml_v2():
+    """Feature set v2 (statistical industries); slower horizon; volatility-scaled target."""
+    return [
+        C("gbm_v2_h5", model="gbm", horizon=5, feature_set="v2"),
+        C("gbm_v2_h21", model="gbm", horizon=21, feature_set="v2"),
+        C("gbm_v2_h5_vs", model="gbm", horizon=5, target="vol_scaled", feature_set="v2"),
+    ]
+
+
+PRESETS["ml_v2"] = ml_v2
+
+
+def seeds():
+    """Seed-noise floor: how much do GBM results move with the random seed alone?"""
+    return [
+        C("gbm_h5_s1", model="gbm", horizon=5, feature_set="v1", seed=1),
+        C("gbm_v2_h5_s1", model="gbm", horizon=5, feature_set="v2", seed=1),
+    ]
+
+
+PRESETS["seeds"] = seeds
+
+
+def lstm():
+    """Sequence model on raw daily inputs (no hand-engineered features)."""
+    return [C("lstm_h5", model="lstm", horizon=5, feature_set="v1", sample_every=4,
+              model_params={"seq_len": 40, "hidden": 32, "n_seeds": 2, "max_epochs": 10})]
+
+
+PRESETS["lstm"] = lstm

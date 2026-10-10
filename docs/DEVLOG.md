@@ -159,3 +159,27 @@ each come out as one cluster, and home-improvement retail (HD, LOW) groups toget
 New features: industry return and industry-relative return over 1/5/21/63 days, plus industry 6-1 momentum.
 Motivation: reversal is concentrated in the industry-relative component (Da, Liu & Schaumburg 2014),
 while industry returns trend (Moskowitz & Grinblatt 1999).
+
+## Phase 7 — Gradient boosting beats linear; signal decay; capacity
+
+**GBM vs Ridge (v1 features, h = 5, dev 2006–2015).** Nonlinear interactions matter, consistent with Gu, Kelly & Xiu (2020):
+
+| Model | IC (5d) | IC t-stat | Decile spread (5d) | L/S weekly gross / net Sharpe | Long-only IR vs SPY / vs EW |
+|---|---|---|---|---|---|
+| Ridge | 0.020 | 3.1 | 30 bps | 0.79 / −0.47 | 0.07 / −0.49 |
+| **HistGBM** | **0.032** | **4.2** | **48 bps** | **1.29 / +0.27** | **0.48 / +0.15** |
+
+GBM portfolio sweep (corrected engine): the beta-neutral, daily-rebalanced hysteresis book reaches **gross Sharpe 1.98**,
+but net −0.56 at 111% daily turnover. The best net results are hysteresis 10%/30% weekly (L/S 0.30) and
+long-only hysteresis 20%/40% weekly (net Sharpe 0.55, alpha vs SPY +3.8%/yr, t = 1.3).
+Beta-neutralising cut L/S volatility from 19% to 14%, so the unhedged book had been carrying
+market noise.
+
+**Signal decay.** Rank IC of the GBM score against the return on day *k* after execution:
+day 1 0.018, day 2 0.016, day 3 0.011, day 5 0.003, day 10 −0.001. The edge lasts about three days.
+So weekly rebalancing leaves alpha on the table, and daily rebalancing pays too much for it.
+Rebalancing every 2–3 days is the natural compromise.
+
+**Capacity (L/S hysteresis, weekly).** Net Sharpe 0.75 at $0.1M, 0.65 at $1M, 0.30 at $10M, −0.31 at $50M.
+Square-root impact dominates beyond ~$20M. Long-only: 0.66 at $0.1M, 0.55 at $10M, 0.29 at $100M.
+The L/S book is a small-capital strategy; the long-only book scales.
