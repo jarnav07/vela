@@ -1,0 +1,11 @@
+# data is rebuilt by scripts/fetch_data.sh + scripts/build_dataset.py (see README)
+/data/
+*.npz
+*.parquet
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+results/cache/
+.DS_Store
