@@ -100,7 +100,8 @@ def main() -> None:
     comp_scores, repro = [], {}
     for d in frozen["models"]:
         cfg = _cfg(d)
-        dev_scores = load_scores(cfg.name)
+        dev_path = RESULTS_DIR.parent / "data" / "scores" / f"{cfg.name}.npy"
+        dev_scores = load_scores(cfg.name) if dev_path.exists() else None
         cfg.last_test_year, cfg.last_test_date = 2020, DATA_END
         cached = RESULTS_DIR.parent / "data" / "scores" / f"final_{cfg.name}.npy"
         if cached.exists():
@@ -109,10 +110,13 @@ def main() -> None:
             s, _ = run_walkforward(cfg, data)
             save_scores(f"final_{cfg.name}", s)
         m = (data.dates >= pd.Timestamp(DEV[0])) & (data.dates <= pd.Timestamp(DEV[1]))
-        a, b = s[m], dev_scores[m]
-        ok = np.isfinite(a) & np.isfinite(b)
-        repro[cfg.name] = {"max_abs_diff_dev": float(np.max(np.abs(a[ok] - b[ok]))) if ok.any() else None,
-                           "rank_corr_dev": float(pd.Series(a[ok]).corr(pd.Series(b[ok]), method="spearman"))}
+        if dev_scores is not None:
+            a, b = s[m], dev_scores[m]
+            ok = np.isfinite(a) & np.isfinite(b)
+            repro[cfg.name] = {"max_abs_diff_dev": float(np.max(np.abs(a[ok] - b[ok]))) if ok.any() else None,
+                               "rank_corr_dev": float(pd.Series(a[ok]).corr(pd.Series(b[ok]), method="spearman"))}
+        else:
+            repro[cfg.name] = "no development-period run to compare (seed added at freeze)"
         comp_scores.append(s)
     scores = rank_average(comp_scores, data.tradable, frozen.get("ensemble_weights")) if len(comp_scores) > 1 else comp_scores[0]
     horizon = frozen["models"][0]["horizon"]

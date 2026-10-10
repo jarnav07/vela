@@ -1,0 +1,94 @@
+{
+  "frozen_at": "2026-10-10T22:40:31",
+  "note": "Frozen before the 2016-2020 holdout was evaluated (docs/DECISIONS.md D8-D12).",
+  "feature_set": "v1",
+  "models": [
+    {
+      "name": "gbm_h5",
+      "model": "gbm",
+      "model_params": {},
+      "horizon": 5,
+      "target": "rank",
+      "features": null,
+      "feature_set": "v1",
+      "baseline_feature": null,
+      "baseline_sign": 1.0,
+      "train_years": null,
+      "sample_every": 2,
+      "first_test_year": 2006,
+      "last_test_year": 2015,
+      "last_test_date": "2015-12-31",
+      "seed": 0
+    },
+    {
+      "name": "gbm_h5_s1",
+      "model": "gbm",
+      "model_params": {},
+      "horizon": 5,
+      "target": "rank",
+      "features": null,
+      "feature_set": "v1",
+      "baseline_feature": null,
+      "baseline_sign": 1.0,
+      "train_years": null,
+      "sample_every": 2,
+      "first_test_year": 2006,
+      "last_test_year": 2015,
+      "last_test_date": "2015-12-31",
+      "seed": 1
+    },
+    {
+      "name": "gbm_h5_s2",
+      "model": "gbm",
+      "model_params": {},
+      "horizon": 5,
+      "target": "rank",
+      "features": null,
+      "feature_set": "v1",
+      "baseline_feature": null,
+      "baseline_sign": 1.0,
+      "train_years": null,
+      "sample_every": 2,
+      "first_test_year": 2006,
+      "last_test_year": 2015,
+      "last_test_date": "2015-12-31",
+      "seed": 2
+    }
+  ],
+  "strategies": {
+    "ls": {
+      "kind": "ls_hyst",
+      "q": 0.1,
+      "exit_q": 0.5,
+      "rebalance": 2,
+      "sizing": "sqrt_adv"
+    },
+    "lo": {
+      "kind": "lo_hyst",
+      "q": 0.2,
+      "exit_q": 0.6,
+      "rebalance": 2,
+      "sizing": "equal"
+    }
+  },
+  "cost_model": {
+    "commission_bps": 0.5,
+    "half_spread_bps": 5.0,
+    "impact_coef": 1.0,
+    "aum": 10000000.0,
+    "borrow_bps_annual": 50.0
+  },
+  "paper": {
+    "lo": {
+      "initial_capital": 100000.0,
+      "half_spread_bps": 5.0,
+      "commission_bps": 0.5,
+      "fractional": true,
+      "min_trade_value": 0.0
+    }
+  },
+  "titles": {
+    "ls": "ML long/short (market-neutral)",
+    "lo": "ML long-only (top quintile)"
+  }
+}

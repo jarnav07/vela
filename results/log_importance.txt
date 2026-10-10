@@ -1,0 +1,8 @@
+/home/user/VELA/vela/research.py:90: RuntimeWarning: Mean of empty slice
+  mkt = np.nanmean(np.where(U[1:], lr, np.nan), axis=1)
+             family  n_features   ic_drop  ic_drop_std  base_ic
+   momentum / trend          11  0.010247     0.000433 0.023197
+      market regime           7  0.008797     0.002792 0.023197
+  volatility / risk          12  0.007827     0.000347 0.023197
+short-term reversal          19  0.006995     0.001170 0.023197
+ liquidity / volume           4 -0.000410     0.000717 0.023197

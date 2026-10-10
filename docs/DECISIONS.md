@@ -66,3 +66,44 @@ Models are sized for 4 cores.
 No T-bill series is reachable from the sandbox (FRED is blocked). Sharpe ratios use rf = 0 and are labelled
 as such. The dollar-neutral long-short book is self-financing, so its return is already an excess return.
 Long-only variants are judged by alpha and information ratio against SPY, where rf largely cancels.
+
+## D8 — Feature set: v1 (53 price/volume features); statistical industries rejected
+**Context.** v2 adds nine point-in-time statistical-industry features. The clusters are economically sensible
+(energy, banks, utilities and pharma each emerge as one cluster).
+**Evidence.** GBM IC (5d) on two seeds each: v1 0.032 / 0.030, v2 0.027 / 0.027. The drop repeats across
+seeds, so it is not noise.
+**Decision.** Keep v1. The industry information appears to be already available to the trees through
+interactions of return and volatility features, and nine extra correlated columns dilute the GBM's random
+feature subsampling.
+
+## D9 — Model: histogram GBM, 5-day rank target, bagged over three seeds
+**Evidence (dev 2006–2015).** Ridge IC 0.020, MLP 0.024, LSTM (see DEVLOG), **GBM 0.031** (mean of two seeds).
+Ensembling the GBM with weaker model families *lowered* IC. The 21-day label has no significant IC.
+The 3-day label has a sharper 1-day IC but less persistent scores and more turnover, and blending it in
+improved net Sharpe by less than the seed-to-seed spread.
+Re-running the same GBM with a different seed moved weekly L/S net Sharpe from 0.27 to 0.04. **Single-seed
+comparisons are unreliable**, and bagging seeds is pure variance reduction (no selection), so the frozen
+model is the rank-average of seeds {0, 1, 2}.
+
+## D10 — Portfolio construction: hysteresis bands, 2-day rebalance
+**Evidence.** The signal decays in ≈ 3 days (IC by holding day: 0.018, 0.016, 0.011, 0.003). Daily rebalancing
+pays costs larger than the edge; weekly rebalancing gives up alpha. A sweep of exit bands × rebalance
+frequency (32 trials, all logged) gives a smooth surface. Wider exit bands and 2-day rebalancing win in both
+books, which suggests a real cost/decay trade-off rather than a lucky cell.
+**Decision.**
+- **Market-neutral L/S:** long the top 10% / short the bottom 10%; hold until the rank crosses the median
+  (exit band 50%); rebalance every 2 days; positions sized ∝ √ADV within each leg; 100% long / 100% short.
+- **Long-only:** buy the top 20%; hold until the rank falls below the 40th percentile (exit 60%); rebalance
+  every 2 days; equal weight. This is the book a personal account can actually run.
+Rejected: beta-neutral scaling (raises gross Sharpe but adds turnover, so net is lower), inverse-vol sizing,
+score EMA smoothing (kills the fast signal).
+
+## D11 — Base-case costs: 5 bps half-spread + 0.5 bps commission + square-root impact at $10M AUM + 50 bps/yr borrow
+Deliberately on the conservative side for S&P 500 names after 2005, where quoted half-spreads were mostly
+1–3 bps. Impact uses `Y = 1`, daily σ and 21-day median dollar volume. Results are also reported as cost
+curves (break-even spread) and capacity curves (AUM $0.1M → $500M), so a reader can apply their own assumptions.
+
+## D12 — Freeze
+Configuration frozen in `results/frozen_config.json` before the holdout was run. The holdout
+(2016-01-04 → 2020-11-10) is evaluated once by `scripts/final_evaluation.py`; any change after that point
+would be reported as post-holdout.

@@ -65,8 +65,18 @@ PRESETS["seeds"] = seeds
 
 def lstm():
     """Sequence model on raw daily inputs (no hand-engineered features)."""
-    return [C("lstm_h5", model="lstm", horizon=5, feature_set="v1", sample_every=4,
-              model_params={"seq_len": 40, "hidden": 32, "n_seeds": 2, "max_epochs": 10})]
+    # First attempt (seq_len 40, hidden 32, 2 seeds, expanding window) needed ~9 min for the smallest
+    # fold on 4 CPU cores and early-stopped at epoch 2: resized to finish in ~30 min (DEVLOG, Phase 9).
+    return [C("lstm_h5", model="lstm", horizon=5, feature_set="v1", sample_every=5, train_years=5,
+              model_params={"seq_len": 30, "hidden": 24, "n_seeds": 1, "max_epochs": 6, "patience": 2})]
 
 
 PRESETS["lstm"] = lstm
+
+
+def horizons():
+    """Label horizon matched to the measured ~3-day signal decay."""
+    return [C("gbm_h3", model="gbm", horizon=3, feature_set="v1")]
+
+
+PRESETS["horizons"] = horizons

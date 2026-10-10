@@ -183,3 +183,61 @@ Rebalancing every 2–3 days is the natural compromise.
 **Capacity (L/S hysteresis, weekly).** Net Sharpe 0.75 at $0.1M, 0.65 at $1M, 0.30 at $10M, −0.31 at $50M.
 Square-root impact dominates beyond ~$20M. Long-only: 0.66 at $0.1M, 0.55 at $10M, 0.29 at $100M.
 The L/S book is a small-capital strategy; the long-only book scales.
+
+## Phase 8 — What did *not* work (dev 2006–2015)
+
+| Experiment | IC (h) | t-stat | L/S gross / net Sharpe | Verdict |
+|---|---|---|---|---|
+| PyTorch MLP (128-64, 3 seeds), h = 5 | 0.024 | 3.2 | 0.68 / −0.39 | Weaker than GBM: the usual result on tabular data |
+| GBM + MLP rank ensemble | 0.030 | 3.9 | 0.92 / 0.13 | **Worse than GBM alone.** Score correlation 0.67; the weaker model adds noise |
+| GBM + MLP + Ridge ensemble | 0.029 | 3.9 | 0.95 / 0.14 | Same |
+| GBM with industry features (v2), h = 5 | 0.027 | 3.8 | 1.04 / 0.03 | Lower than v1 (0.032); seed-noise check queued |
+| GBM v2, h = 21 (monthly) | 0.013 | 0.9 | 0.24 / −0.03 | **No significant monthly predictability** from price/volume features |
+| GBM v2, volatility-scaled target | 0.025 | 3.1 | 0.94 / −0.04 | No better than the rank target |
+| Inverse-volatility sizing | — | — | net 0.32 vs 0.44 equal-weight | Hurts: down-weights the volatile names where the reversal edge lives |
+
+Kept: **square-root-of-ADV sizing** in the L/S book (net Sharpe 0.44 → 0.54; cost 6.6 → 6.1 bps/day).
+It shifts capital toward names that are cheap to trade, so the same signal costs less to harvest.
+
+The h = 21 failure is consistent with the measured signal decay (≈ 3 days). The predictive content of daily
+price/volume features is short-horizon, and the project's edge has to be harvested at a 2–5 day cadence.
+
+## Phase 9 — Seed noise, horizon matching, what the model learned, freezing
+
+**Seed noise.** The same GBM with seed 1 instead of 0: IC 0.030 vs 0.032, but weekly L/S net Sharpe 0.04 vs 0.27.
+The randomness of column subsampling alone moves portfolio results as much as many design changes did.
+With the hysteresis constructions the gap shrinks (L/S net 0.48 vs 0.54, long-only 0.58 vs 0.58): they
+do not react to marginal rank changes. Lesson recorded in D9: compare configurations on seed bags, and
+bag seeds in the final model.
+
+**v1 vs v2 features, two seeds each:** IC 0.032/0.030 vs 0.027/0.027. The industry features really do hurt (D8).
+
+**3-day label.** The sharpest short-term signal (1-day IC 0.021, 3-day IC t = 5.2), but its scores churn more
+(turnover 66% vs 52%/day), so L/S net Sharpe falls to 0.22. Blending it with the 5-day bag gained +0.02
+Sharpe, inside the seed-noise band, so it was not adopted (Occam).
+
+**What the GBM uses** (`scripts/feature_importance.py`: train 2001–12, validate 2013, measure on 2014–15;
+each family shuffled across stocks *within* dates; market-level features swapped *across* dates):
+
+| Feature family | IC lost when shuffled (base IC 0.023) |
+|---|---|
+| Momentum / trend | 0.0102 |
+| Market regime | 0.0088 |
+| Volatility / risk | 0.0078 |
+| Short-term reversal | 0.0070 |
+| Liquidity / volume | −0.0004 (unused) |
+
+The model is not a repackaged reversal factor. It combines trend, risk and reversal, and conditions them
+on market state. The market-regime features are constant across stocks on a date, so they can only
+matter through interactions, which is what a linear model cannot capture.
+*Bug found and fixed on the way:* the first version shuffled market features within dates, where they are
+constant, and reported zero importance. They are now swapped across dates.
+
+**LSTM sizing.** The first LSTM configuration (40-day sequences, 32 hidden units, two seeds, expanding
+window) took ~9 min on the *smallest* fold and early-stopped at epoch 2 for both seeds. Projected runtime
+was 3–4 h on 4 CPU cores. It was resized (30-day sequences, 24 hidden units, one seed, 5-year rolling window,
+every 5th training day) to fit the compute budget.
+
+**Freeze.** Configuration written to `results/frozen_config.json` (D12): GBM, v1 features, 5-day rank target,
+seeds {0, 1, 2}; L/S hysteresis 10%/50%, 2-day rebalance, √ADV sizing; long-only hysteresis 20%/60%, 2-day
+rebalance; base-case costs at $10M AUM.

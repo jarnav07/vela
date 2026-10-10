@@ -1,0 +1,2 @@
+/home/user/VELA/vela/research.py:90: RuntimeWarning: Mean of empty slice
+  mkt = np.nanmean(np.where(U[1:], lr, np.nan), axis=1)
