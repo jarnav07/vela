@@ -5,8 +5,8 @@ S&P 500. It covers:
 
 1. **Data.** 20.9 years of daily OHLCV (2000-01 → 2020-11) with **point-in-time S&P 500 membership**
    and a documented data-cleaning pass.
-2. **Features.** 62 causal features (reversal, momentum, volatility, liquidity, technicals, market regime,
-   and *statistical industries* learned from returns).
+2. **Features.** 53 causal features (reversal, momentum, volatility, liquidity, technicals, market regime),
+   plus 9 point-in-time *statistical-industry* features learned from returns, which were tested and rejected.
 3. **Models.** A ladder from heuristics to Ridge, gradient-boosted trees, a PyTorch MLP and a PyTorch LSTM,
    trained in a **purged annual walk-forward** with time-ordered early stopping.
 4. **Backtesting.** A **vectorised NumPy engine** with next-open execution, drift-aware turnover,
@@ -35,12 +35,12 @@ configuration was committed.
 | SPY (total return): Sharpe / CAGR | 0.44 / 7.0% | 0.87 / 14.5% | 0.56 / 9.4% |
 | Equal-weight universe: Sharpe / CAGR | 0.58 / 11.3% | 0.72 / 12.8% | 0.62 / 11.8% |
 | Long-only information ratio vs EW | +0.37 | **+0.27** | +0.34 |
-| **Market-neutral** L/S book: net (gross) Sharpe | 0.61 (1.44) | **0.13 (0.86)** | 0.45 (1.25) |
+| **Dollar-neutral** L/S book: net (gross) Sharpe | 0.61 (1.44) | **0.13 (0.86)** | 0.45 (1.25) |
 
 - The GBM signal is 1.8x as strong as the best single-factor baseline, and stays positive (if halved)
   in the holdout.
 - **$100k paper-trading replay of the holdout:** +108% vs +93% for SPY.
-- The market-neutral book's gross edge is real (Sharpe 1.25), but its profits concentrate in volatile markets,
+- The dollar-neutral long/short book's gross edge is real (Sharpe 1.25), but its profits concentrate in volatile markets,
   and at institutional size costs absorb most of them. Capacity: net Sharpe 0.78 at $100k → 0.45 at $10M → 0 at $50M.
 
 ![Long-only vs benchmarks](reports/figures/lo_equity.png)

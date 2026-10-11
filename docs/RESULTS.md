@@ -14,7 +14,7 @@ was run, once, by `scripts/final_evaluation.py`.
 | …CAGR | 13.0% | **14.3%** | 13.4% |
 | …vs SPY (total return): CAGR / Sharpe | 7.0% / 0.44 | 14.5% / 0.87 | 9.4% / 0.56 |
 | …vs EW universe: CAGR / information ratio | 11.3% / +0.37 | 12.8% / **+0.27** | 11.8% / +0.34 |
-| **ML long/short** (market-neutral): net Sharpe (gross) | 0.61 (1.44) | **0.13 (0.86)** | 0.45 (1.25) |
+| **ML long/short** (dollar-neutral): net Sharpe (gross) | 0.61 (1.44) | **0.13 (0.86)** | 0.45 (1.25) |
 | Signal: mean daily rank IC, 5-day (t-stat) | 0.032 (4.2) | **0.016 (1.3)** | 0.027 (4.2) |
 
 **Verdict.** The machine-learned ranking signal is real: positive out-of-sample IC in 12 of 15 years,
@@ -24,7 +24,7 @@ baseline over the same period (5-day reversal: IC 0.015, t = 2.4). In the locked
 - The **long-only book** turned $1 into $6.48 over 2006–2020, against $3.80 for SPY and $5.22 for the
   equal-weighted universe. In the holdout it beat the EW benchmark but not SPY's mega-cap-led rally.
   A $100k paper-trading replay of the holdout through the trade ledger returned **+108% vs SPY +93%**.
-- The **market-neutral book** has a gross Sharpe of 1.25 over 15 years, but most of that goes to trading
+- The **dollar-neutral long/short book** has a gross Sharpe of 1.25 over 15 years, but most of that goes to trading
   costs at institutional size. Its profits are concentrated in high-volatility regimes (2008–09, 2020),
   and it lost money in 2016–2018, a mostly low-volatility stretch (§8).
 - **Multiple testing:** after deflating for the 136 development trials, the development Sharpe is not
@@ -71,9 +71,9 @@ Every model below is evaluated with the *same* frozen portfolio construction and
 Main development findings (full story in [DEVLOG.md](DEVLOG.md)):
 
 - **Costs are the binding constraint.** Daily 1-day reversal has a real edge (t = 3.4) but turns over 340% of
-  NAV a day and loses Sharpe 6 to costs.
+  NAV a day; costs turn its gross Sharpe of 0.96 into −6.1.
 - **The signal decays in about three days** (IC by holding day: 0.018, 0.016, 0.011, 0.003). Hysteresis bands
-  with a 2-day cadence harvest it at about a third of the turnover of naive daily rebalancing.
+  with a 2-day cadence harvest it at about a quarter of the turnover of naive daily rebalancing (51% vs 192% a day).
 - **Gradient boosting beats linear and neural models** on these tabular features. The difference comes
   from interactions with the market state (see §6).
 - **Negative results kept:** statistical-industry features, a 21-day horizon, a volatility-scaled target, a
@@ -81,10 +81,13 @@ Main development findings (full story in [DEVLOG.md](DEVLOG.md)):
 - **Seed noise is large.** A different random seed alone moved weekly L/S net Sharpe from 0.27 to 0.04, so the
   final model bags three seeds.
 
-## 3. Market-neutral long/short book (pre-registered)
+## 3. Dollar-neutral long/short book (pre-registered)
 
 Long the top 10% / short the bottom 10% of scores, each position held until its rank crosses the median,
-rebalanced every 2 days, sized ∝ √ADV, 100% long / 100% short.
+rebalanced every 2 days, sized ∝ √ADV, 100% long / 100% short. The book is dollar-neutral, not beta-neutral:
+its long leg holds somewhat higher-beta names, leaving a residual beta of 0.1–0.3. Beta-neutral scaling
+raised gross Sharpe but lowered net Sharpe through extra turnover, so it was rejected (D10). The chart titles
+below say "market-neutral"; read that as dollar-neutral.
 
 | | Dev 2006–15 | Holdout 2016–20 | Full |
 |---|---|---|---|

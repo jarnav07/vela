@@ -40,7 +40,7 @@ If not, the paper-trading bullet above is accurate.
 2. **Costs were the hardest part.** 1-day reversal has a statistically real edge (t = 3.4), but trading it
    daily turns over 340% of NAV a day and turns gross Sharpe 0.96 into net −6. The fix was a
    cost-aware design: a 2-day cadence matched to the measured ~3-day signal decay, plus hysteresis bands
-   (enter at the top 10%, exit at the median). Turnover fell to about a third.
+   (enter at the top 10%, exit at the median). Turnover fell to about a quarter (51% vs 192% of NAV a day).
 3. **Why gradient boosting won.** IC 0.031 vs 0.020 (Ridge) and 0.024 (MLP) on the same features.
    Permutation importance shows market-regime features matter as much as stock features. Those features are
    identical across stocks on a given day, so they can only help through interactions, which trees capture
@@ -53,8 +53,8 @@ If not, the paper-trading bullet above is accurate.
    after the configuration was committed; every trial logged (136). The Deflated Sharpe Ratio says the
    development search alone does not prove skill, which is why the holdout matters.
 7. **What happened out of sample.** The signal held up but halved (IC 0.032 → 0.016). The long-only book
-   still beat the equal-weighted index (IR 0.27) but not SPY's mega-cap-led 2016–20. The market-neutral
-   book's gross edge scales with volatility while its costs do not: it lost money in calm 2016–18 and made
+   still beat the equal-weighted index (IR 0.27) but not SPY's mega-cap-led 2016–20. The dollar-neutral
+   long/short book's gross edge scales with volatility while its costs do not: it lost money in calm 2016–18 and made
    +57% in 2020. That is the "reversal is liquidity provision" result of Nagel (2012), rediscovered on my
    own data.
 8. **Engineering.** Look-ahead canary test, feature-causality test, bit-exact reproducibility of
