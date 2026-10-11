@@ -66,6 +66,11 @@ def equity_curves(series: dict[str, pd.Series], path: Path, title: str, colors: 
         ax.annotate(f"{eq.iloc[-1]:.2f}", (eq.index[-1], eq.iloc[-1]), xytext=(4, 0), textcoords="offset points",
                     color=TEXT_2, fontsize=8, va="center")
     ax.set_yscale("log")
+    lo, hi = ax.get_ylim()
+    nice = [v for v in (0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 10, 15, 20, 30, 50) if lo <= v <= hi]
+    ax.yaxis.set_major_locator(matplotlib.ticker.FixedLocator(nice))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"${v:g}"))
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     if shade:
         ax.axvspan(pd.Timestamp(shade[0]), pd.Timestamp(shade[1]), color="#f1f0ec", zorder=0)
         ax.text(pd.Timestamp(shade[0]), ax.get_ylim()[1], " holdout", color=TEXT_2, fontsize=8, va="top")
@@ -107,7 +112,8 @@ def annual_returns(series: dict[str, pd.Series], path: Path, title: str, colors:
 
 
 def line_xy(x, ys: dict[str, np.ndarray], path: Path, title: str, xlabel: str, ylabel: str,
-            hline: float | None = 0.0, vline: float | None = None, colors: dict[str, str] | None = None):
+            hline: float | None = 0.0, vline: float | None = None, colors: dict[str, str] | None = None,
+            xticklabels: list[str] | None = None):
     fig, ax = _fig(7, 3.8)
     _style(ax, title, ylabel)
     colors = colors or {}
@@ -119,6 +125,8 @@ def line_xy(x, ys: dict[str, np.ndarray], path: Path, title: str, xlabel: str, y
     if vline is not None:
         ax.axvline(vline, color=TEXT_2, linewidth=0.8, linestyle="--")
     ax.set_xlabel(xlabel, color=TEXT_2, fontsize=9)
+    if xticklabels is not None:
+        ax.set_xticks(list(x), xticklabels)
     if len(ys) > 1:
         ax.legend(frameon=False, fontsize=9, labelcolor=TEXT)
     _save(fig, path)

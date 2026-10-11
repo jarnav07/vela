@@ -48,6 +48,10 @@ def _cfg(d: dict) -> ExperimentConfig:
     return ExperimentConfig(**{k: v for k, v in d.items() if k in names})
 
 
+def _aum_label(a: float) -> str:
+    return f"${a / 1e9:g}bn" if a >= 1e9 else f"${a / 1e6:g}M" if a >= 1e6 else f"${a / 1e3:g}k"
+
+
 def count_trials() -> tuple[int, np.ndarray]:
     """Number of development trials and their daily Sharpe ratios (for the DSR variance term)."""
     exp = pd.read_csv(RESULTS_DIR / "experiments.csv")
@@ -174,7 +178,8 @@ def main() -> None:
                       f"{title}: cost sensitivity (2006-2020)", "half-spread (bps); commission, impact and borrow scaled alike",
                       "Net Sharpe", vline=costs.half_spread_bps)
         plots.line_xy(np.log10(cap["aum"]), {"net Sharpe": cap["sharpe"].values}, FIGURES_DIR / f"{sname}_capacity.png",
-                      f"{title}: capacity (square-root impact)", "log10 AUM ($)", "Net Sharpe", vline=np.log10(costs.aum))
+                      f"{title}: capacity (square-root impact), 2006-2020", "strategy AUM (log scale)", "Net Sharpe",
+                      vline=np.log10(costs.aum), xticklabels=[_aum_label(a) for a in cap["aum"]])
 
         # paper-trading replay of the holdout
         if frozen.get("paper", {}).get(sname):
@@ -189,7 +194,7 @@ def main() -> None:
             prep["engine_twr_same_period"] = float(np.prod(1 + eng.net) - 1)
             prep["n_trades"] = int(len(ledger.trades))
             summary["strategies"][sname]["paper_holdout"] = prep
-            ledger.to_csv(OUT / f"{sname}_paper_ledger")
+            ledger.to_csv(OUT / f"{sname}_paper_ledger", compress=True)
             ledger.pnl_by_position(px).head(15).to_csv(OUT / f"{sname}_paper_top_positions.csv")
 
     # signal diagnostics

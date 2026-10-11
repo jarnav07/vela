@@ -22,7 +22,31 @@ Results are in [`docs/RESULTS.md`](docs/RESULTS.md). The process is documented i
 (design decisions and the alternatives rejected) and [`docs/DEVLOG.md`](docs/DEVLOG.md)
 (what went wrong and how it was fixed).
 
-<!-- RESULTS-SUMMARY -->
+## Results at a glance
+
+Out-of-sample, net of costs (5 bps half-spread + 0.5 bps commission + square-root impact at $10M + borrow).
+Model selection used 2006–2015 only. 2016-01 → 2020-11 was a **locked holdout**, run once after the
+configuration was committed.
+
+| | Development 2006–15 | **Holdout 2016–20** | Full 2006–20 |
+|---|---|---|---|
+| Signal: daily rank IC, 5-day (t) | 0.032 (4.2) | **0.016 (1.3)** | 0.027 (4.2) |
+| **Long-only** ML book: net Sharpe / CAGR | 0.59 / 13.0% | **0.75 / 14.3%** | 0.63 / 13.4% |
+| SPY (total return): Sharpe / CAGR | 0.44 / 7.0% | 0.87 / 14.5% | 0.56 / 9.4% |
+| Equal-weight universe: Sharpe / CAGR | 0.58 / 11.3% | 0.72 / 12.8% | 0.62 / 11.8% |
+| Long-only information ratio vs EW | +0.37 | **+0.27** | +0.34 |
+| **Market-neutral** L/S book: net (gross) Sharpe | 0.61 (1.44) | **0.13 (0.86)** | 0.45 (1.25) |
+
+- The GBM signal is 1.8x as strong as the best single-factor baseline, and stays positive (if halved)
+  in the holdout.
+- **$100k paper-trading replay of the holdout:** +108% vs +93% for SPY.
+- The market-neutral book's gross edge is real (Sharpe 1.25), but its profits concentrate in volatile markets,
+  and at institutional size costs absorb most of them. Capacity: net Sharpe 0.78 at $100k → 0.45 at $10M → 0 at $50M.
+
+![Long-only vs benchmarks](reports/figures/lo_equity.png)
+
+Full write-up: [docs/RESULTS.md](docs/RESULTS.md) · CV wording: [docs/CV.md](docs/CV.md)
+
 
 ## Repository layout
 

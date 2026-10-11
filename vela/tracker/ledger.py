@@ -80,10 +80,10 @@ class Ledger:
         c = pd.read_csv(cashflows_csv, parse_dates=["date"])
         return cls(t[TRADE_COLS], c[FLOW_COLS])
 
-    def to_csv(self, folder: str | Path) -> None:
+    def to_csv(self, folder: str | Path, compress: bool = False) -> None:
         folder = Path(folder)
         folder.mkdir(parents=True, exist_ok=True)
-        self.trades.to_csv(folder / "trades.csv", index=False)
+        self.trades.to_csv(folder / ("trades.csv.gz" if compress else "trades.csv"), index=False)
         self.cashflows.to_csv(folder / "cashflows.csv", index=False)
 
     # ------------------------------------------------------------ valuation

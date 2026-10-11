@@ -294,3 +294,29 @@ comes from costs: the ledger charges them in the fill price, while the engine de
 of NAV.
 Note for live use: the frozen book re-equalises ~110 positions every two days, so a real account should
 set `min_trade_value` (e.g. $50) to skip tiny resizing orders.
+
+## Phase 12 — Holdout (run once) and post-holdout diagnosis
+
+All three frozen seeds were re-run over 2006–2020. Development-period scores for seeds 0 and 1 reproduced
+the original runs **bit for bit** (max abs difference 0.0 over 995,766 scores). `scripts/final_evaluation.py`
+then ran once. A second run, only to fix the y-axis tick format of the charts, reproduced `summary.json`
+exactly.
+
+**Holdout outcome (2016-01 → 2020-11):** IC halved (0.032 → 0.016) but stayed positive, with near-monotonic
+deciles. The long-only book returned 14.3%/yr (net Sharpe 0.75). It beat the EW universe (IR 0.27) but not
+SPY's mega-cap rally (alpha −0.8%, t −0.2). The market-neutral book made net Sharpe 0.13 (gross 0.86): −21%
+in 2016, −5% in 2017, −18% in 2018, then +57% in 2020.
+
+**Diagnosis (post-holdout, explanatory only).** Bucketing L/S returns by the ex-ante market-volatility tercile:
+gross 9.9%/yr in calm markets vs 40.8% in stressed ones, at a similar gross Sharpe, while costs stay
+~11–17%/yr. So net is negative when markets are calm. This is the liquidity-provision interpretation
+of short-term reversal (Nagel 2012). The holdout had 27% stressed days vs 36% in development. A
+regime-aware trading intensity is the natural next step. It was **not** implemented and back-fitted,
+because it was suggested by the holdout itself.
+
+**Other checks:** baseline ICs over the same 2006–2020 window (5-day reversal 0.015, momentum 0.014)
+confirm the GBM's advantage is 1.8x, not the "~2x" first drafted in the CV notes. Several write-up phrases
+were corrected against `summary.json` before committing.
+
+**Ledger demo** (`scripts/track_portfolio.py --demo`): the holdout paper account, marked at closing prices,
+ends at $211,058 from $100,000. Sharpe 0.81, max DD −40% (March 2020), IR vs SPY 0.31.

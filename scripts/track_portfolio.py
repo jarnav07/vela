@@ -63,7 +63,8 @@ def main() -> None:
         from vela.research import ResearchData
         d = ResearchData.load("v1")
         folder = next((root / "results" / "final").glob("*_paper_ledger"))
-        ledger = Ledger.from_csv(folder / "trades.csv", folder / "cashflows.csv")
+        trades = folder / "trades.csv.gz" if (folder / "trades.csv.gz").exists() else folder / "trades.csv"
+        ledger = Ledger.from_csv(trades, folder / "cashflows.csv")
         start = ledger.cashflows["date"].min()
         tick = sorted(ledger.trades["ticker"].unique())
         prices = pd.DataFrame(d.panel.close, index=d.dates, columns=d.panel.tickers)[tick].loc[start:]

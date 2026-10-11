@@ -1,0 +1,155 @@
+/home/user/VELA/vela/research.py:90: RuntimeWarning: Mean of empty slice
+  mkt = np.nanmean(np.where(U[1:], lr, np.nan), axis=1)
+/usr/local/lib/python3.13/dist-packages/numpy/lib/_nanfunctions_impl.py:1215: RuntimeWarning: All-NaN slice encountered
+  return fnb._ureduce(a, func=_nanmedian, keepdims=keepdims,
+/home/user/VELA/vela/research.py:260: RuntimeWarning: Mean of empty slice
+  out[b] = np.nanmean(np.nanmean(vals, axis=1))
+{
+ "frozen": {
+  "frozen_at": "2026-10-10T22:40:31",
+  "note": "Frozen before the 2016-2020 holdout was evaluated (docs/DECISIONS.md D8-D12).",
+  "feature_set": "v1",
+  "models": [
+   {
+    "name": "gbm_h5",
+    "model": "gbm",
+    "model_params": {},
+    "horizon": 5,
+    "target": "rank",
+    "features": null,
+    "feature_set": "v1",
+    "baseline_feature": null,
+    "baseline_sign": 1.0,
+    "train_years": null,
+    "sample_every": 2,
+    "first_test_year": 2006,
+    "last_test_year": 2015,
+    "last_test_date": "2015-12-31",
+    "seed": 0
+   },
+   {
+    "name": "gbm_h5_s1",
+    "model": "gbm",
+    "model_params": {},
+    "horizon": 5,
+    "target": "rank",
+    "features": null,
+    "feature_set": "v1",
+    "baseline_feature": null,
+    "baseline_sign": 1.0,
+    "train_years": null,
+    "sample_every": 2,
+    "first_test_year": 2006,
+    "last_test_year": 2015,
+    "last_test_date": "2015-12-31",
+    "seed": 1
+   },
+   {
+    "name": "gbm_h5_s2",
+    "model": "gbm",
+    "model_params": {},
+    "horizon": 5,
+    "target": "rank",
+    "features": null,
+    "feature_set": "v1",
+    "baseline_feature": null,
+    "baseline_sign": 1.0,
+    "train_years": null,
+    "sample_every": 2,
+    "first_test_year": 2006,
+    "last_test_year": 2015,
+    "last_test_date": "2015-12-31",
+    "seed": 2
+   }
+  ],
+  "strategies": {
+   "ls": {
+    "kind": "ls_hyst",
+    "q": 0.1,
+    "exit_q": 0.5,
+    "rebalance": 2,
+    "sizing": "sqrt_adv"
+   },
+   "lo": {
+    "kind": "lo_hyst",
+    "q": 0.2,
+    "exit_q": 0.6,
+    "rebalance": 2,
+    "sizing": "equal"
+   }
+  },
+  "cost_model": {
+   "commission_bps": 0.5,
+   "half_spread_bps": 5.0,
+   "impact_coef": 1.0,
+   "aum": 10000000.0,
+   "borrow_bps_annual": 50.0
+  },
+  "paper": {
+   "lo": {
+    "initial_capital": 100000.0,
+    "half_spread_bps": 5.0,
+    "commission_bps": 0.5,
+    "fractional": true,
+    "min_trade_value": 0.0
+   }
+  },
+  "titles": {
+   "ls": "ML long/short (market-neutral)",
+   "lo": "ML long-only (top quintile)"
+  }
+ },
+ "reproducibility": {
+  "gbm_h5": {
+   "max_abs_diff_dev": 0.0,
+   "rank_corr_dev": 0.9999999999999998
+  },
+  "gbm_h5_s1": {
+   "max_abs_diff_dev": 0.0,
+   "rank_corr_dev": 1.0
+  },
+  "gbm_h5_s2": "no development-period run to compare (seed added at freeze)"
+ },
+ "n_trials": 136,
+ "decile_fwd_return_bps": {
+  "dev": [
+   -0.14134181963649833,
+   12.020515828300027,
+   17.465373879913194,
+   19.369497181076788,
+   21.101921097870505,
+   23.790660929302767,
+   30.54955732039285,
+   31.24419706760385,
+   33.72490548284609,
+   49.34743890053005
+  ],
+  "holdout": [
+   17.184941303445736,
+   18.285854216098667,
+   18.278233175882207,
+   21.095248227052736,
+   24.441555228397892,
+   27.048182406820036,
+   31.427439398597507,
+   34.324707375511224,
+   38.19994650350928,
+   43.23842432615292
+  ]
+ },
+ "signal_decay_ic": {
+  "1": 0.018627308384730985,
+  "2": 0.01336351256181698,
+  "3": 0.009956744832833667,
+  "5": 0.0036059277901423366,
+  "10": 0.0013428946042291611,
+  "21": 0.006071762504480216
+ }
+    ls dev      net Sharpe 0.61 (gross 1.44) CAGR 9.5% maxDD -26.4% alpha vs SPY 7.7% (t 1.5) IR(EW) -0.12 IC 0.032
+    ls holdout  net Sharpe 0.13 (gross 0.86) CAGR 0.8% maxDD -40.3% alpha vs SPY 0.5% (t 0.1) IR(EW) -0.45 IC 0.016
+   robustness: {'break_even_cost_multiplier': 1.5667097118407145, 'break_even_half_spread_bps': 7.833548559203573, 'sharpe_returns_clipped_25pct': 0.41158791993606, 'sharpe_execute_next_close': 0.20514758488258103}
+   DSR (dev): trial-variance 0.0 | null-variance 0.231 | n_trials 136
+    lo dev      net Sharpe 0.59 (gross 0.80) CAGR 13.0% maxDD -52.6% alpha vs SPY 4.8% (t 1.8) IR(EW) 0.37 IC 0.032
+    lo holdout  net Sharpe 0.75 (gross 0.98) CAGR 14.3% maxDD -38.2% alpha vs SPY -0.8% (t -0.2) IR(EW) 0.27 IC 0.016
+   robustness: {'break_even_cost_multiplier': inf, 'break_even_half_spread_bps': inf, 'sharpe_returns_clipped_25pct': 0.6149302798030846, 'sharpe_execute_next_close': 0.5822678686067123}
+   DSR (dev): trial-variance 0.0 | null-variance 0.224 | n_trials 136

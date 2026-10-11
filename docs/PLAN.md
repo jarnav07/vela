@@ -118,3 +118,21 @@ A model only moves up the ladder if it beats the simpler one **out of sample, af
 | Survivorship bias | Point-in-time membership; residual bias documented; EW-universe benchmark shares it |
 | Costs eat short-horizon alpha (the main known failure mode of daily ML strategies) | Realistic costs from day one; turnover controls; break-even cost analysis |
 | Data errors (bad prints) | Quality filters; winsorised targets; rank features |
+
+---
+
+## What changed from this plan (written at the end)
+
+- **Data:** as planned (Qlib, PIT S&P 500), plus a stricter cleaning pass than anticipated: 8 corrupt tickers (D3).
+- **Horizon:** 5 days. The 21-day label had no significant IC; the 3-day label churned more.
+- **Models:** the full ladder was run (baselines → Ridge → GBM → MLP → LSTM). The ensemble across model
+  families was dropped because it hurt; the final model is a three-seed GBM bag.
+- **Features:** a planned extension, statistical industries, was built and rejected on evidence (D8).
+- **Portfolio construction:** hysteresis bands with a 2-day cadence and √ADV sizing, chosen after measuring
+  the signal's ~3-day decay. Beta-neutralisation and score smoothing were tried and rejected.
+- **Engine:** gained a buy-and-hold-between-rebalances mode after a semantic bug was found (DEVLOG Phase 4),
+  and an independent event-driven ledger for validation.
+- **Evaluation:** as planned, plus seed-noise measurement, feature-family importance, a regime diagnosis
+  and capacity curves.
+- **Live/real-capital tooling:** a live-signal script using yfinance (not testable from the sandbox,
+  mock-tested) and a ledger-based tracker CLI.
