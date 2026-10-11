@@ -320,3 +320,14 @@ were corrected against `summary.json` before committing.
 
 **Ledger demo** (`scripts/track_portfolio.py --demo`): the holdout paper account, marked at closing prices,
 ends at $211,058 from $100,000. Sharpe 0.81, max DD −40% (March 2020), IR vs SPY 0.31.
+
+## Phase 13 — Live path checked end to end (offline)
+
+`scripts/live_signals.py train` fitted the three frozen GBM seeds on 2001–2019 (validation 2020;
+962,488 rows each; models saved to `models/`, which is git-ignored). Yahoo Finance is unreachable from the
+sandbox, so `signal` was exercised offline: the two network functions were patched to serve the last two
+years of the Qlib panel as "today's" data, with a mock account holding AAPL, MSFT and XOM plus $5,000 cash.
+The command loaded the models, rebuilt features, ranked 2020-11-10's universe, applied the hysteresis rule
+relative to current holdings (kept AAPL and MSFT at target weight, sold XOM, which had left the band) and
+printed 102 fractional-share orders. The only untested piece left is the real `yfinance.download` call;
+its output format is covered by `tests/test_tracker.py::test_live_adapter_parses_yfinance_frame`.
