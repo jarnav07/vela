@@ -271,3 +271,26 @@ Every saved model re-scored with the *frozen* L/S and long-only books and base-c
 Two separate contributions show up. **Portfolio construction** (hysteresis + 2-day cadence) alone
 takes 5-day reversal from deeply negative net to break-even. **The GBM signal** then adds ≈ +0.6
 net Sharpe on top of the same construction.
+
+## Phase 11 — Real-data audit of the engine; tracker performance fix
+
+**Problem.** The paper-trading replay was far too slow on real data (> 10 min for 4 years). `Ledger.trade`
+appended rows with `DataFrame.loc[len(df)] = …`, which is quadratic in the number of fills (~100k).
+**Fix.** New fills and cash flows are buffered in Python lists and concatenated lazily when `trades` /
+`cashflows` are read. The 4-year replay now takes 26 s.
+
+**Audit (dev period, 2012–2015, long-only book, frozen construction, spread + commission only).**
+The event-driven ledger (96,704 fills, $100k account, fractional shares) against the vectorised engine:
+
+| | Ledger | Vectorised engine |
+|---|---|---|
+| Total return 2012–2015 | 91.06% | 91.18% |
+| Daily return difference | mean 0.002 bps, s.d. 2.8 bps | — |
+| Correlation of daily returns | 0.9995 | — |
+
+The two implementations share no code beyond the target weights, so this is strong evidence that the
+engine's vectorised drift, turnover and cost accounting is right on real data. The residual difference
+comes from costs: the ledger charges them in the fill price, while the engine deducts them as a fraction
+of NAV.
+Note for live use: the frozen book re-equalises ~110 positions every two days, so a real account should
+set `min_trade_value` (e.g. $50) to skip tiny resizing orders.

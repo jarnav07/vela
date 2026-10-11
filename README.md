@@ -45,7 +45,7 @@ vela/
   plots.py       report figures
 scripts/         fetch_data.sh, build_dataset.py, run_experiment.py, evaluate_scores.py,
                  final_evaluation.py, track_portfolio.py, sync_gcs.sh
-tests/           37 tests: look-ahead canary, feature causality, purge, cost maths, engine vs ledger
+tests/           35 tests: look-ahead canary, feature causality, purge, cost maths, engine vs ledger
 results/         experiment and portfolio trial logs, final metrics
 reports/figures  charts used in docs/RESULTS.md
 ```

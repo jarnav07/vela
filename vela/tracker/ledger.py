@@ -19,7 +19,6 @@ time-weighted return ``r_t = NAV_t / (NAV_{t-1} + flow_t) - 1``.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -28,23 +27,50 @@ import pandas as pd
 from .. import metrics as M
 
 
-@dataclass
+TRADE_COLS = ["date", "ticker", "quantity", "price", "fees"]
+FLOW_COLS = ["date", "amount"]
+
+
 class Ledger:
-    trades: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(
-        columns=["date", "ticker", "quantity", "price", "fees"]))
-    cashflows: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=["date", "amount"]))
+    """Trades and external cash flows. New entries are buffered in lists and turned into
+    DataFrames lazily, so recording tens of thousands of fills stays O(n)."""
+
+    def __init__(self, trades: pd.DataFrame | None = None, cashflows: pd.DataFrame | None = None):
+        self._trades = trades.copy() if trades is not None else pd.DataFrame(columns=TRADE_COLS)
+        self._flows = cashflows.copy() if cashflows is not None else pd.DataFrame(columns=FLOW_COLS)
+        self._new_trades: list[list] = []
+        self._new_flows: list[list] = []
+
+    @staticmethod
+    def _merge(df: pd.DataFrame, rows: list[list], cols: list[str]) -> pd.DataFrame:
+        add = pd.DataFrame(rows, columns=cols)
+        out = add if len(df) == 0 else pd.concat([df, add], ignore_index=True)
+        out["date"] = pd.to_datetime(out["date"])
+        return out
+
+    @property
+    def trades(self) -> pd.DataFrame:
+        if self._new_trades:
+            self._trades = self._merge(self._trades, self._new_trades, TRADE_COLS)
+            self._new_trades = []
+        return self._trades
+
+    @property
+    def cashflows(self) -> pd.DataFrame:
+        if self._new_flows:
+            self._flows = self._merge(self._flows, self._new_flows, FLOW_COLS)
+            self._new_flows = []
+        return self._flows
 
     # ------------------------------------------------------------- building
     def deposit(self, date, amount: float) -> None:
-        self.cashflows.loc[len(self.cashflows)] = [pd.Timestamp(date), float(amount)]
+        self._new_flows.append([pd.Timestamp(date), float(amount)])
 
     def trade(self, date, ticker: str, quantity: float, price: float, fees: float = 0.0) -> None:
-        self.trades.loc[len(self.trades)] = [pd.Timestamp(date), ticker, float(quantity), float(price), float(fees)]
+        self._new_trades.append([pd.Timestamp(date), ticker, float(quantity), float(price), float(fees)])
 
     def add_trades(self, df: pd.DataFrame) -> None:
-        df = df[["date", "ticker", "quantity", "price", "fees"]].copy()
-        df["date"] = pd.to_datetime(df["date"])
-        self.trades = pd.concat([self.trades if len(self.trades) else None, df], ignore_index=True)
+        self._new_trades.extend(df[TRADE_COLS].values.tolist())
 
     @classmethod
     def from_csv(cls, trades_csv: str | Path, cashflows_csv: str | Path) -> "Ledger":
@@ -52,7 +78,7 @@ class Ledger:
         if "fees" not in t:
             t["fees"] = 0.0
         c = pd.read_csv(cashflows_csv, parse_dates=["date"])
-        return cls(t[["date", "ticker", "quantity", "price", "fees"]], c[["date", "amount"]])
+        return cls(t[TRADE_COLS], c[FLOW_COLS])
 
     def to_csv(self, folder: str | Path) -> None:
         folder = Path(folder)

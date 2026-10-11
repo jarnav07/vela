@@ -85,7 +85,12 @@ def strategy_report(name, res_full, data, horizon, scores, n_trials, trial_sr) -
         ic = M.daily_rank_ic(scores[m], np.where(data.tradable, data.fwd(horizon), np.nan)[m])
         row.update(M.ic_summary(ic, horizon))
         if label == "dev":
+            # (a) cross-trial Sharpe variance from the trial log: harsh, because the log contains
+            #     deliberately extreme trials (e.g. daily 1-day reversal at Sharpe -6);
+            # (b) textbook null variance 1/T of a skill-less Sharpe estimate.
             row.update({f"dsr_{k}": v for k, v in M.deflated_sharpe(r.net, n_trials, trial_sr).items()})
+            row["dsr_nullvar"] = M.deflated_sharpe(r.net, n_trials)["dsr"]
+            row["dsr_nullvar_sr0_annual"] = M.deflated_sharpe(r.net, n_trials)["sr0_annual"]
         out[label] = row
     return out
 
@@ -214,7 +219,8 @@ def main() -> None:
                   f"IC {r['ic_mean']:.3f}")
         print("   robustness:", rep["robustness"])
         if "dsr_dsr" in rep["dev"]:
-            print("   DSR (dev):", round(rep["dev"]["dsr_dsr"], 3), "n_trials", n_trials)
+            print("   DSR (dev): trial-variance", round(rep["dev"]["dsr_dsr"], 3), "| null-variance",
+                  round(rep["dev"]["dsr_nullvar"], 3), "| n_trials", n_trials)
 
 
 if __name__ == "__main__":
