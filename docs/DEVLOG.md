@@ -241,3 +241,33 @@ every 5th training day) to fit the compute budget.
 **Freeze.** Configuration written to `results/frozen_config.json` (D12): GBM, v1 features, 5-day rank target,
 seeds {0, 1, 2}; L/S hysteresis 10%/50%, 2-day rebalance, √ADV sizing; long-only hysteresis 20%/60%, 2-day
 rebalance; base-case costs at $10M AUM.
+
+**LSTM result (resized).** Mean IC 0.008 at 5 days (t = 1.5); 1-day IC 0.010, about the same as the plain
+1-day-reversal baseline. Given only raw return/volume sequences and the CPU budget, the network mostly
+re-learned short-term reversal. The hand-built cross-sectional features (trend, risk, regime) carry
+information that 30 days of a single stock's own history does not. This is not evidence that sequence
+models cannot work here; a larger model with cross-sectional inputs and a GPU would be the next experiment.
+
+**Interruption.** The session's worker process restarted mid-run, killing the full-period scoring of the
+frozen models (it had reached fold 2011 of seed 0). It was restarted from scratch. Nothing had been
+evaluated on the holdout.
+
+## Phase 10 — Model ladder under one construction (dev 2006–2015)
+
+Every saved model re-scored with the *frozen* L/S and long-only books and base-case costs
+(`scripts/model_ladder.py`, `results/model_ladder.csv`):
+
+| Model | IC 5d | IC t | Decile spread (bps/5d) | L/S gross Sharpe | L/S net Sharpe | Long-only net Sharpe | IR vs SPY | IR vs EW |
+|---|---|---|---|---|---|---|---|---|
+| 12-1 momentum | 0.017 | 1.9 | −7.9 | −0.13 | −0.22 | 0.49 | 0.29 | −0.38 |
+| 1-day reversal | 0.012 | 1.8 | 25.1 | 0.94 | −1.58 | 0.09 | −0.64 | −1.54 |
+| 5-day reversal | 0.013 | 2.0 | 26.3 | 1.10 | −0.02 | 0.47 | 0.35 | −0.15 |
+| Ridge | 0.020 | 3.1 | 30.2 | 1.11 | 0.23 | 0.54 | 0.57 | 0.06 |
+| PyTorch MLP | 0.024 | 3.2 | 31.5 | 0.99 | 0.21 | 0.52 | 0.51 | 0.06 |
+| PyTorch LSTM | 0.008 | 1.5 | 16.2 | 0.91 | −1.23 | 0.28 | −0.30 | −1.44 |
+| GBM + industry features (2 seeds) | 0.028 | 3.8 | 40.9 | 1.12 | 0.30 | 0.56 | 0.62 | 0.26 |
+| **GBM (2-seed bag)** | **0.031** | **4.2** | **48.7** | **1.42** | **0.58** | **0.59** | **0.69** | **0.33** |
+
+Two separate contributions show up. **Portfolio construction** (hysteresis + 2-day cadence) alone
+takes 5-day reversal from deeply negative net to break-even. **The GBM signal** then adds ≈ +0.6
+net Sharpe on top of the same construction.
