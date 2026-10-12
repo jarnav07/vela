@@ -22,6 +22,7 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class Fold:
+    """Date indices of one walk-forward fold: train, validation (early stopping) and test year."""
     test_year: int
     train_idx: np.ndarray   # date indices
     val_idx: np.ndarray
@@ -43,6 +44,7 @@ def annual_folds(
     val_days: int = 252,
     last_test_date: str | None = None,
 ) -> list[Fold]:
+    """One fold per test year with purged expanding (or rolling) training windows."""
     purge = horizon + 2
     folds = []
     years = dates.year

@@ -48,49 +48,100 @@ configuration was committed.
 Full write-up: [docs/RESULTS.md](docs/RESULTS.md) · CV wording: [docs/CV.md](docs/CV.md)
 
 
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [docs/PLAN.md](docs/PLAN.md) | The plan written before any modelling, plus what changed by the end |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Design decisions D1–D12: context, alternatives rejected, evidence |
+| [docs/DEVLOG.md](docs/DEVLOG.md) | Chronological log of every phase, problem, bug and fix (Phases 0–13) |
+| [docs/RESULTS.md](docs/RESULTS.md) | Full evaluation: model ladder, both books, significance, robustness, diagnosis, limitations |
+| [docs/FEATURES.md](docs/FEATURES.md) | Definition of every feature |
+| [docs/CV.md](docs/CV.md) | CV wording and interview talking points, every number traceable to `results/` |
+| [results/README.md](results/README.md) | What each results file and column contains |
+
 ## Repository layout
 
 ```
 vela/
-  data/          Qlib binary reader, aligned panel, data-quality cleaning
+  config.py      paths and the research calendar (dev 2006-2015, holdout 2016-2020, fixed up front)
+  data/          qlib_source.py (Qlib binary reader), panel.py (aligned T x N panel),
+                 quality.py (cleaning), live.py (Yahoo Finance adapter for live use)
   universe.py    point-in-time tradable universe (membership + liquidity + history)
-  features.py    53 price/volume features, cross-sectionally ranked
+  features.py    53 price/volume features, cross-sectionally ranked (docs/FEATURES.md)
   industries.py  point-in-time statistical industries (PCA + k-means on residual returns)
   targets.py     execution-aligned forward returns and target transforms
   walkforward.py purged annual walk-forward splits
-  models/        Ridge, HistGBM, random forest (sklearn); MLP, LSTM (PyTorch)
+  models/        base.py (interface), sklearn_models.py (Ridge, HistGBM, random forest),
+                 torch_models.py (MLP), sequence.py (LSTM)
+  experiments.py named experiment presets, so every trial is reproducible and countable
   ensemble.py    rank-average ensembles
   portfolio.py   long/short, long-only, hysteresis bands, beta-neutralising, sizing
-  backtest/      vectorised engine + cost model
-  metrics.py     performance, relative, PSR/DSR, bootstrap, IC
-  analysis.py    cost sensitivity, capacity, decay, per-year tables
-  research.py    pipeline: data bundle → walk-forward → evaluation → trial log
-  tracker/       ledger, order generation, paper-trading simulator
+  backtest/      engine.py: vectorised engine + cost model
+  metrics.py     performance, relative (Newey-West), PSR/DSR, bootstrap, IC
+  analysis.py    cost sensitivity, capacity, decay, per-year tables, permutation importance
+  research.py    pipeline: data bundle -> walk-forward -> evaluation -> trial log
+  tracker/       ledger.py (NAV, P&L, TWR, report), orders.py (order generation),
+                 paper.py (event-driven paper-trading simulator)
   plots.py       report figures
-scripts/         fetch_data.sh, build_dataset.py, run_experiment.py, evaluate_scores.py,
-                 final_evaluation.py, track_portfolio.py, sync_gcs.sh
+scripts/         see the table below
 tests/           35 tests: look-ahead canary, feature causality, purge, cost maths, engine vs ledger
-results/         experiment and portfolio trial logs, final metrics
-reports/figures  charts used in docs/RESULTS.md
+results/         trial logs, frozen config, final metrics (results/README.md)
+reports/         figures/ (charts used in the docs), paper_account/ (tracker demo output)
 ```
 
-## Reproducing
+| Script | Purpose |
+|---|---|
+| `scripts/fetch_data.sh` | Download and unpack the Qlib US dataset (450 MB) into `data/` |
+| `scripts/build_dataset.py` | Build and clean the research panel -> `data/panel.npz`, `results/data_quality.json` |
+| `scripts/run_experiment.py <preset> …` | Run walk-forward trials on the development period and log them |
+| `scripts/evaluate_scores.py <scores> [--sweep]` | Re-score cached model outputs under different portfolio constructions |
+| `scripts/model_ladder.py` | Compare every model under the frozen construction (RESULTS §2) |
+| `scripts/feature_importance.py` | Grouped permutation importance by feature family |
+| `scripts/final_scores.py` | Train the frozen models over 2006–2020 (scores only, no evaluation) |
+| `scripts/final_evaluation.py` | The one-time dev + holdout evaluation, robustness checks and figures |
+| `scripts/live_signals.py train / signal` | Fit the frozen model on all history; generate orders for your account from current data |
+| `scripts/track_portfolio.py` | Track a real or paper account (broker CSVs) against a benchmark |
+| `scripts/sync_gcs.sh push / pull` | Mirror `data/` to a Google Cloud Storage bucket (optional) |
+
+## Reproducing the research
 
 ```bash
-pip install -e ".[dev]"
-scripts/fetch_data.sh                       # 450 MB Qlib US archive from GitHub releases
-python scripts/build_dataset.py             # cleaned panel -> data/panel.npz
-python scripts/run_experiment.py baselines ml_v1 ml_v2 seeds lstm   # development trials (2006-2015)
-python scripts/evaluate_scores.py gbm_h5 --sweep                    # portfolio-construction sweep
-python scripts/final_evaluation.py          # frozen config: dev + locked holdout 2016-2020
-pytest                                      # test suite
+pip install -e ".[dev]"            # on a CPU-only machine, install torch from download.pytorch.org/whl/cpu first
+scripts/fetch_data.sh              # 450 MB Qlib US archive from GitHub releases
+python scripts/build_dataset.py    # cleaned panel -> data/panel.npz (feature caches build on first use)
+
+# development trials, 2006-2015 (presets in vela/experiments.py; ~3 h on 4 CPU cores)
+python scripts/run_experiment.py baselines ml_v1 ml_v2 seeds horizons lstm
+python scripts/evaluate_scores.py base_rev5_h5 ridge_h5 gbm_h5 --sweep
+python scripts/model_ladder.py
+python scripts/feature_importance.py
+
+# the frozen configuration (results/frozen_config.json) on dev + the locked 2016-2020 holdout
+python scripts/final_scores.py     # ~45 min
+python scripts/final_evaluation.py # tables -> results/final/, figures -> reports/figures/
+pytest                             # 35 tests, synthetic data only
 ```
 
-Tracking a real or paper account:
+Some sweeps recorded in the DEVLOG (hysteresis bands × rebalance frequency, sizing schemes, seed bags) were
+run as short ad-hoc scripts that call the same `evaluate_spec` function. Their rows are in
+`results/portfolio_trials.csv`.
+
+## Using it on a real or paper account
 
 ```bash
-python scripts/track_portfolio.py --trades my_trades.csv --cashflows my_cash.csv --prices prices.csv
+pip install -e ".[live]"                               # adds yfinance
+python scripts/live_signals.py train                   # fit the 3 frozen GBM seeds on all history -> models/
+python scripts/live_signals.py signal --holdings holdings.csv --cash 2500 --book lo
+#   holdings.csv: ticker,quantity  -> prints orders for the long-only book, relative to what you hold
+python scripts/track_portfolio.py --trades trades.csv --cashflows cashflows.csv --prices prices.csv --benchmark SPY
+#   -> NAV, P&L by position, time-weighted return, Sharpe, max drawdown, alpha/IR vs SPY + charts
+python scripts/track_portfolio.py --demo               # same report for the 2016-2020 paper-trading replay
 ```
+
+`signal` downloads today's S&P 500 constituents and two years of prices from Yahoo Finance. It was tested
+offline (DEVLOG Phase 13) because the build environment could not reach Yahoo. Check the first orders by hand,
+and set a minimum order size in your broker: the book holds ~110–210 names (≈180 in 2016–2020) and re-equalises them every two days.
 
 ## Key design choices (details in docs/DECISIONS.md)
 
@@ -106,10 +157,11 @@ python scripts/track_portfolio.py --trades my_trades.csv --cashflows my_cash.csv
 
 ## Limitations
 
-- Data ends 2020-11 (the only full-history source reachable from the build environment); live use needs
-  a current price feed, for which the tracker is source-agnostic.
+- Data ends 2020-11 (the only full-history source reachable from the build environment). Live use goes
+  through `scripts/live_signals.py` with a current Yahoo Finance feed.
 - Residual survivorship bias: 86 of 755 historical index members (mostly acquired or bankrupt companies)
   have no price data. The equal-weighted-universe benchmark shares this bias, so strategy-vs-EW
   comparisons are fair; SPY comparisons flatter long-only results somewhat.
 - Costs are modelled, not measured; no intraday data was available to calibrate the spread.
 - Sharpe ratios use a zero risk-free rate (no T-bill series was reachable).
+- No licence file has been added; all rights are reserved by default until one is chosen.

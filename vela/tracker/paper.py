@@ -23,6 +23,7 @@ from .orders import generate_orders
 
 @dataclass
 class PaperConfig:
+    """Account size, execution costs and order rules for a paper-trading replay."""
     initial_capital: float = 10_000.0
     half_spread_bps: float = 5.0
     commission_bps: float = 0.5
@@ -41,6 +42,7 @@ def simulate(
     end: str,
     cfg: PaperConfig = PaperConfig(),
 ) -> Ledger:
+    """Replay target weights day by day through orders and fills; returns the resulting trade ledger."""
     ledger = Ledger()
     t_idx = np.flatnonzero((dates >= pd.Timestamp(start)) & (dates <= pd.Timestamp(end)))
     first = t_idx[0]

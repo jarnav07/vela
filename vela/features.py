@@ -30,6 +30,7 @@ from .data.panel import Panel
 
 @dataclass
 class FeatureSet:
+    """Feature tensor (T x N x K) with its feature names; market-level names are listed separately."""
     names: list[str]
     values: np.ndarray        # (T, N, K) float32, cross-sectionally normalised
     market_names: list[str]   # subset of names that are market-level (not ranked)
@@ -152,6 +153,7 @@ def _standardise_market(s: pd.Series, window: int = 252) -> np.ndarray:
 
 
 def build_features(panel: Panel, tradable: np.ndarray, include: list[str] | None = None) -> FeatureSet:
+    """Compute all (or ``include``-listed) features and normalise them: ranks for stock-level, trailing z-scores for market-level."""
     stock, market = raw_features(panel, tradable)
     if include is not None:
         stock = {k: v for k, v in stock.items() if k in include}

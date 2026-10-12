@@ -92,6 +92,7 @@ def group_mean(values: np.ndarray, labels: np.ndarray, mask: np.ndarray, n_group
 
 
 def industry_features(panel: Panel, tradable: np.ndarray, n_clusters: int = 20) -> tuple[dict[str, pd.DataFrame], np.ndarray]:
+    """Industry and industry-relative returns from point-in-time clusters; returns (features, labels)."""
     labels = annual_clusters(panel, tradable, n_clusters=n_clusters)
     c = pd.DataFrame(panel.close)
     feats: dict[str, pd.DataFrame] = {}

@@ -47,6 +47,7 @@ TRADING_DAYS = 252
 
 @dataclass(frozen=True)
 class CostModel:
+    """Per-trade costs (bps of traded notional) plus impact and borrow parameters for one backtest."""
     commission_bps: float = 0.5
     half_spread_bps: float = 5.0
     impact_coef: float = 1.0          # Y in the square-root law; 0 disables impact
@@ -70,6 +71,7 @@ class CostModel:
 
 @dataclass
 class BacktestResult:
+    """Daily series from a backtest, labelled by the start of each holding interval."""
     dates: pd.DatetimeIndex
     gross: np.ndarray
     cost: np.ndarray          # trading costs (commission + spread + impact), fraction of NAV

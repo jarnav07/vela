@@ -58,6 +58,7 @@ def _load_or_build(panel: Panel, U: np.ndarray, version: str, rebuild: bool = Fa
 # ------------------------------------------------------------------ data bundle
 @dataclass
 class ResearchData:
+    """Everything an experiment needs: panel, tradable mask, features, execution returns, risk inputs, benchmarks."""
     panel: Panel
     tradable: np.ndarray
     features: FeatureSet
@@ -106,6 +107,7 @@ class ResearchData:
 # --------------------------------------------------------------- configuration
 @dataclass
 class ExperimentConfig:
+    """One model trial: model, hyper-parameters, label horizon/target, features and walk-forward settings."""
     name: str
     model: str = "gbm"                  # ridge | gbm | rf | mlp | lstm | baseline
     model_params: dict = field(default_factory=dict)
@@ -124,6 +126,7 @@ class ExperimentConfig:
 
 
 def make_model(cfg: ExperimentConfig):
+    """Instantiate the model named in ``cfg`` with its parameters and seed."""
     from .models.sklearn_models import GBMModel, RandomForestModel, RidgeModel
     if cfg.model == "ridge":
         return RidgeModel(**cfg.model_params)
@@ -208,6 +211,7 @@ def run_walkforward(cfg: ExperimentConfig, data: ResearchData, verbose: bool = T
 # ------------------------------------------------------------------ evaluation
 @dataclass
 class StrategySpec:
+    """Portfolio construction: book type, entry/exit quantiles, rebalance cadence, sizing and hedging options."""
     kind: str = "ls"            # ls | lo | ls_hyst | lo_hyst
     q: float = 0.1              # quantile (enter quantile for hysteresis variants)
     exit_q: float | None = None
@@ -244,6 +248,7 @@ def build_weights(scores: np.ndarray, data: ResearchData, spec: StrategySpec) ->
 
 def backtest_scores(scores: np.ndarray, data: ResearchData, spec: StrategySpec,
                     costs: CostModel = CostModel(), keep_holdings: bool = False) -> BacktestResult:
+    """Turn scores into weights with ``spec`` and run the vectorised backtest."""
     W, reb = build_weights(scores, data, spec)
     return run_backtest(W, data.R, data.dates, costs=costs, lag=1, sigma=data.sigma, adv=data.adv,
                         keep_holdings=keep_holdings, rebalance=reb)
@@ -263,6 +268,7 @@ def decile_returns(scores: np.ndarray, fwd: np.ndarray, tradable: np.ndarray, n_
 
 def evaluate(scores: np.ndarray, data: ResearchData, horizon: int, start: str, end: str,
              specs: dict[str, StrategySpec] | None = None, costs: CostModel = CostModel()) -> dict:
+    """Signal metrics (IC, deciles) and default-construction backtest metrics for one score matrix over [start, end]."""
     dates = data.dates
     m = (dates >= pd.Timestamp(start)) & (dates <= pd.Timestamp(end))
     U = data.tradable
@@ -294,6 +300,7 @@ def evaluate(scores: np.ndarray, data: ResearchData, horizon: int, start: str, e
 
 
 def default_specs(horizon: int) -> dict[str, StrategySpec]:
+    """Simple decile long/short and top-quintile long-only books rebalanced every ``horizon`` days."""
     return {
         "ls": StrategySpec("ls", q=0.1, rebalance=max(1, horizon)),
         "lo": StrategySpec("lo", q=0.2, rebalance=max(1, horizon)),
@@ -306,6 +313,7 @@ EXPERIMENT_LOG = RESULTS_DIR / "experiments.csv"
 
 def log_experiment(cfg: ExperimentConfig, result: dict, diags: list[dict] | None = None,
                    period: str = "dev", path: Path = EXPERIMENT_LOG) -> None:
+    """Append one trial (config + metrics) to the experiment log CSV."""
     row = {"timestamp": pd.Timestamp.now().isoformat(timespec="seconds"), "period": period,
            **{k: (json.dumps(v) if isinstance(v, (dict, list)) else v) for k, v in asdict(cfg).items()},
            **{k: (round(v, 6) if isinstance(v, float) else v) for k, v in result.items()}}
@@ -320,6 +328,7 @@ def log_experiment(cfg: ExperimentConfig, result: dict, diags: list[dict] | None
 
 
 def save_scores(name: str, scores: np.ndarray) -> Path:
+    """Cache a score matrix to data/scores/<name>.npy."""
     p = DATA_DIR / "scores" / f"{name}.npy"
     p.parent.mkdir(parents=True, exist_ok=True)
     np.save(p, scores.astype(np.float32))
@@ -327,4 +336,5 @@ def save_scores(name: str, scores: np.ndarray) -> Path:
 
 
 def load_scores(name: str) -> np.ndarray:
+    """Load a cached score matrix."""
     return np.load(DATA_DIR / "scores" / f"{name}.npy").astype(np.float64)

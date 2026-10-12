@@ -29,6 +29,7 @@ FIELDS = ("open", "high", "low", "close", "volume")
 
 @dataclass(frozen=True)
 class QlibSource:
+    """Read-only access to a Qlib data directory (calendar, membership files, per-symbol binaries)."""
     root: Path
 
     def __post_init__(self):

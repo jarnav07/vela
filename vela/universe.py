@@ -17,10 +17,12 @@ from .data.panel import Panel
 
 
 def dollar_volume(panel: Panel) -> np.ndarray:
+    """Close price times volume (true dollars traded, even with rebased prices)."""
     return panel.close * panel.volume
 
 
 def rolling_median_dollar_volume(panel: Panel, window: int = 21) -> np.ndarray:
+    """Trailing median dollar volume including day *t* (known at the close)."""
     dv = pd.DataFrame(dollar_volume(panel))
     return dv.rolling(window, min_periods=max(5, window * 2 // 3)).median().values
 
@@ -31,6 +33,7 @@ def tradable_mask(
     min_history: int = 126,
     window: int = 21,
 ) -> np.ndarray:
+    """Boolean (T x N) tradable universe per the rules in the module docstring."""
     med = rolling_median_dollar_volume(panel, window)
     history = np.cumsum(np.isfinite(panel.close), axis=0)
     with np.errstate(invalid="ignore"):

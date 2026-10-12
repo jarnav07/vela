@@ -53,6 +53,7 @@ def long_short_quantile(scores: np.ndarray, tradable: np.ndarray, q: float = 0.1
 
 def long_only_top(scores: np.ndarray, tradable: np.ndarray, q: float = 0.2,
                   vol: np.ndarray | None = None, min_names: int = 50) -> np.ndarray:
+    """Long-only book holding the top ``q`` fraction of scores (equal or inverse-vol weighted)."""
     r = _row_rank(scores, tradable)
     n = np.isfinite(r).sum(1, keepdims=True)
     inv_vol = None if vol is None else 1.0 / np.where(vol > 0, vol, np.nan)
@@ -62,6 +63,7 @@ def long_only_top(scores: np.ndarray, tradable: np.ndarray, q: float = 0.2,
 
 
 def equal_weight_universe(tradable: np.ndarray) -> np.ndarray:
+    """Equal weights across every tradable name (the EW benchmark book)."""
     return _leg_weights(tradable, 1.0, None)
 
 
@@ -122,6 +124,7 @@ def hysteresis_long_short(scores: np.ndarray, tradable: np.ndarray, enter_q: flo
 
 def hysteresis_long_only(scores: np.ndarray, tradable: np.ndarray, enter_q: float = 0.2, exit_q: float = 0.4,
                          min_names: int = 50, size: np.ndarray | None = None) -> np.ndarray:
+    """Buffered long-only book: buy the top ``enter_q``, hold until the rank falls below the top ``exit_q``."""
     r = _row_rank(scores, tradable)
     T, N = r.shape
     pos = np.zeros(N, dtype=bool)

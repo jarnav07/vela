@@ -79,6 +79,7 @@ def equity_curves(series: dict[str, pd.Series], path: Path, title: str, colors: 
 
 
 def drawdowns(series: dict[str, pd.Series], path: Path, title: str, colors: dict[str, str] | None = None):
+    """Drawdown paths of each return series, with the maximum drawdown in the legend."""
     fig, ax = _fig(9, 3.2)
     _style(ax, title, "Drawdown")
     colors = colors or {}
@@ -93,6 +94,7 @@ def drawdowns(series: dict[str, pd.Series], path: Path, title: str, colors: dict
 
 
 def annual_returns(series: dict[str, pd.Series], path: Path, title: str, colors: dict[str, str] | None = None):
+    """Grouped bar chart of calendar-year returns; returns the underlying table."""
     df = pd.DataFrame({k: (1 + v.fillna(0)).groupby(v.index.year).prod() - 1 for k, v in series.items()})
     fig, ax = _fig(9, 3.8)
     _style(ax, title, "Calendar-year return")
@@ -114,6 +116,7 @@ def annual_returns(series: dict[str, pd.Series], path: Path, title: str, colors:
 def line_xy(x, ys: dict[str, np.ndarray], path: Path, title: str, xlabel: str, ylabel: str,
             hline: float | None = 0.0, vline: float | None = None, colors: dict[str, str] | None = None,
             xticklabels: list[str] | None = None):
+    """Single- or multi-series line chart with markers (used for cost and capacity curves)."""
     fig, ax = _fig(7, 3.8)
     _style(ax, title, ylabel)
     colors = colors or {}
@@ -134,6 +137,7 @@ def line_xy(x, ys: dict[str, np.ndarray], path: Path, title: str, xlabel: str, y
 
 def bars(labels, values, path: Path, title: str, ylabel: str, horizontal: bool = False, signed: bool = True,
          fmt: str = "{:.1f}"):
+    """Bar chart (vertical with value labels, or horizontal); negative values in the second colour."""
     values = np.asarray(values, dtype=float)
     colors = [POS if v >= 0 else NEG for v in values] if signed else [SLOTS[0]] * len(values)
     if horizontal:

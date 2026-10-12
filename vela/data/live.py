@@ -22,6 +22,7 @@ CONSTITUENTS_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-compa
 
 
 def current_sp500_tickers() -> list[str]:
+    """Today's S&P 500 symbols (Yahoo format, e.g. ``BRK-B``) from the public constituents CSV."""
     with urllib.request.urlopen(CONSTITUENTS_URL, timeout=30) as resp:
         df = pd.read_csv(io.StringIO(resp.read().decode()))
     return sorted(df["Symbol"].astype(str).str.replace(".", "-", regex=False).tolist())
@@ -47,6 +48,7 @@ def panel_from_yahoo_frame(raw: pd.DataFrame, tickers: list[str], benchmark: str
 
 
 def fetch_panel(tickers: list[str], start: str, end: str | None = None, benchmark: str = "SPY") -> Panel:
+    """Download daily OHLCV from Yahoo Finance for ``tickers`` (+ benchmark) and build a Panel."""
     import yfinance as yf  # optional dependency: pip install -e ".[live]"
 
     raw = yf.download(sorted(set(tickers) | {benchmark}), start=start, end=end, auto_adjust=True,

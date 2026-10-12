@@ -9,6 +9,7 @@ from .research import ExperimentConfig as C
 
 
 def baselines():
+    """Single-factor heuristics (reversal, momentum) scored like models, at 1- and 5-day horizons."""
     out = []
     for h in (1, 5):
         out += [
@@ -26,15 +27,18 @@ PRESETS = {
 
 
 def ml_v1():
-    """First pass of the model ladder on all 53 features."""
-    out = []
-    for h in (5, 1):
-        out += [
-            C(f"ridge_h{h}", model="ridge", model_params={"alpha": 100.0}, horizon=h),
-            C(f"gbm_h{h}", model="gbm", horizon=h),
-            C(f"mlp_h{h}", model="mlp", horizon=h),
-        ]
-    return out
+    """First pass of the model ladder on all 53 features, 5-day horizon.
+
+    As first written this preset also listed 1-day-horizon versions of the three models. That batch was
+    stopped after the 5-day models (the portfolio sweep had already shown daily trading is cost-prohibitive,
+    DEVLOG Phase 7), so they were never run or logged. They are omitted here so the preset reproduces
+    exactly the logged trials.
+    """
+    return [
+        C("ridge_h5", model="ridge", model_params={"alpha": 100.0}, horizon=5),
+        C("gbm_h5", model="gbm", horizon=5),
+        C("mlp_h5", model="mlp", horizon=5),
+    ]
 
 
 PRESETS["ml_v1"] = ml_v1

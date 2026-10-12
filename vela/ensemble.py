@@ -11,6 +11,7 @@ import pandas as pd
 
 
 def rank_average(score_list: list[np.ndarray], tradable: np.ndarray, weights: list[float] | None = None) -> np.ndarray:
+    """Weighted average of per-date cross-sectional ranks (centred on 0); NaN where no model scores a name."""
     weights = weights or [1.0] * len(score_list)
     total = None
     wsum = None

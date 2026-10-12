@@ -147,6 +147,7 @@ class Ledger:
 
 
 def time_weighted_returns(val: pd.DataFrame) -> pd.Series:
+    """Daily returns of the account with deposits/withdrawals removed (flows assumed at the start of day)."""
     nav, flow = val["nav"], val["flow"]
     base = nav.shift(1) + flow
     r = nav / base - 1.0
@@ -155,6 +156,7 @@ def time_weighted_returns(val: pd.DataFrame) -> pd.Series:
 
 
 def performance_report(val: pd.DataFrame, benchmark_prices: pd.Series | None = None) -> dict:
+    """NAV, P&L, risk and (optionally) benchmark-relative statistics for a valued ledger."""
     r = time_weighted_returns(val)
     start = val.index[(val["nav"] > 0).argmax()] if (val["nav"] > 0).any() else val.index[0]
     r = r.loc[start:]

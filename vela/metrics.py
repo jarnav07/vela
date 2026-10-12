@@ -23,20 +23,24 @@ EULER_GAMMA = 0.5772156649015329
 
 # ----------------------------------------------------------------- basic stats
 def equity_curve(r: np.ndarray | pd.Series) -> np.ndarray:
+    """Cumulative growth of 1 unit given simple daily returns (NaN treated as 0)."""
     return np.cumprod(1.0 + np.nan_to_num(np.asarray(r, dtype=float)))
 
 
 def drawdown(r: np.ndarray | pd.Series) -> np.ndarray:
+    """Percentage drop of the equity curve from its running peak, per day."""
     eq = equity_curve(r)
     peak = np.maximum.accumulate(np.concatenate([[1.0], eq]))[1:]
     return eq / peak - 1.0
 
 
 def max_drawdown(r) -> float:
+    """Worst peak-to-trough drawdown (a negative number)."""
     return float(drawdown(r).min()) if len(r) else 0.0
 
 
 def sharpe(r, periods: int = TRADING_DAYS) -> float:
+    """Annualised Sharpe ratio with a zero risk-free rate."""
     r = np.asarray(r, dtype=float)
     r = r[np.isfinite(r)]
     sd = r.std(ddof=1)
@@ -44,6 +48,7 @@ def sharpe(r, periods: int = TRADING_DAYS) -> float:
 
 
 def sortino(r, periods: int = TRADING_DAYS) -> float:
+    """Annualised Sortino ratio (downside deviation below zero)."""
     r = np.asarray(r, dtype=float)
     r = r[np.isfinite(r)]
     downside = np.sqrt(np.mean(np.minimum(r, 0.0) ** 2))
@@ -51,6 +56,7 @@ def sortino(r, periods: int = TRADING_DAYS) -> float:
 
 
 def cagr(r, periods: int = TRADING_DAYS) -> float:
+    """Compound annual growth rate implied by daily returns."""
     r = np.asarray(r, dtype=float)
     if len(r) == 0:
         return 0.0
@@ -61,6 +67,7 @@ def cagr(r, periods: int = TRADING_DAYS) -> float:
 
 
 def perf_stats(r, periods: int = TRADING_DAYS) -> dict:
+    """Standard performance summary of a daily return series."""
     r = np.asarray(r, dtype=float)
     r = np.nan_to_num(r)
     mdd = max_drawdown(r)

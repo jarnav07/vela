@@ -26,6 +26,7 @@ def open_to_open_returns(panel: Panel) -> np.ndarray:
 
 
 def forward_returns(panel: Panel, horizon: int) -> np.ndarray:
+    """``fwd[t] = open[t+1+h] / open[t+1] - 1``: the return a close-``t`` signal can capture over ``h`` days."""
     o = panel.open
     y = np.full_like(o, np.nan)
     with np.errstate(invalid="ignore", divide="ignore"):

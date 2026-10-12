@@ -42,6 +42,7 @@ def _predict_batched(net: nn.Module, X: np.ndarray, batch: int = 65536) -> np.nd
 
 
 class MLPModel:
+    """Seed-averaged feed-forward network (Linear-BatchNorm-SiLU-Dropout blocks) with early stopping on validation IC."""
     name = "mlp"
 
     def __init__(self, hidden=(128, 64), dropout: float = 0.2, lr: float = 1e-3, weight_decay: float = 1e-5,

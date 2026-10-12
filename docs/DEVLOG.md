@@ -292,7 +292,7 @@ The two implementations share no code beyond the target weights, so this is stro
 engine's vectorised drift, turnover and cost accounting is right on real data. The residual difference
 comes from costs: the ledger charges them in the fill price, while the engine deducts them as a fraction
 of NAV.
-Note for live use: the frozen book re-equalises ~110 positions every two days, so a real account should
+Note for live use: the frozen book re-equalises ~160 positions (2012–2015 average) every two days, so a real account should
 set `min_trade_value` (e.g. $50) to skip tiny resizing orders.
 
 ## Phase 12 — Holdout (run once) and post-holdout diagnosis
@@ -331,3 +331,20 @@ The command loaded the models, rebuilt features, ranked 2020-11-10's universe, a
 relative to current holdings (kept AAPL and MSFT at target weight, sold XOM, which had left the band) and
 printed 102 fractional-share orders. The only untested piece left is the real `yfinance.download` call;
 its output format is covered by `tests/test_tracker.py::test_live_adapter_parses_yfinance_frame`.
+
+## Phase 14 — Documentation audit
+
+A scripted audit (markdown links and images, README coverage of every script and module, docstrings) found:
+- No broken links; every module had a module docstring.
+- **58 public functions/classes without docstrings**, including core APIs (`Panel`, `CostModel`,
+  `ExperimentConfig`, `StrategySpec`, `evaluate`, `simulate`, `tradable_mask`). Docstrings were added; no
+  code changed.
+- **The README did not mention four scripts**, including `live_signals.py`. It now has a documentation index,
+  a script table, the full reproduction pipeline and a "using it on a real or paper account" section.
+- **No feature reference and no guide to `results/`.** Added `docs/FEATURES.md` (definition of all 62 features)
+  and `results/README.md` (every results file and its columns).
+- **The `ml_v1` preset did not reproduce the logged trials.** As written it also listed 1-day-horizon Ridge,
+  GBM and MLP models. That batch was stopped after the 5-day models (Phase 7), so they were never run or logged.
+  The preset now lists only what ran, with a docstring explaining why.
+- Corrected two numbers in passing: the DEVLOG phase count, and the long-only book's typical position
+  count (~160 names in 2012–2015, ~180 in the holdout, not ~110).

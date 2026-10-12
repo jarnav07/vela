@@ -50,6 +50,7 @@ def glitch_mask(panel: Panel, threshold: float = np.log(3.0)) -> np.ndarray:
 
 
 def clean_panel(panel: Panel, threshold: float = np.log(3.0), max_glitches: int = 2) -> tuple[Panel, dict]:
+    """Apply the cleaning policy in the module docstring; return the cleaned panel and a report dict."""
     o, h, l, c = (panel.open.copy(), panel.high.copy(), panel.low.copy(), panel.close.copy())
     v = panel.volume.copy()
 

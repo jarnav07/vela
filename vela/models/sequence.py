@@ -28,6 +28,7 @@ torch.set_num_threads(4)
 
 
 def build_sequence_inputs(panel, tradable) -> np.ndarray:
+    """(T x N x 5) per-day inputs for the LSTM, each standardised causally by trailing volatility."""
     c = pd.DataFrame(panel.close)
     o = pd.DataFrame(panel.open)
     dv = pd.DataFrame(panel.close * panel.volume)
@@ -57,6 +58,7 @@ class _LSTMNet(nn.Module):
 
 
 class LSTMModel:
+    """Seed-averaged LSTM that scores (date, stock) rows from their trailing input sequences."""
     name = "lstm"
 
     def __init__(self, seq_len: int = 60, hidden: int = 32, layers: int = 1, dropout: float = 0.1,

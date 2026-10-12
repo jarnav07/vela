@@ -9,6 +9,7 @@ from .base import grouped_ic
 
 
 class RidgeModel:
+    """L2-regularised linear regression on the ranked features."""
     name = "ridge"
 
     def __init__(self, alpha: float = 10.0):
@@ -77,6 +78,7 @@ class GBMModel:
 
 
 class RandomForestModel:
+    """Bagged regression trees with large leaves (noisy target) and row subsampling."""
     name = "rf"
 
     def __init__(self, n_estimators: int = 200, min_samples_leaf: int = 2000, max_features: float = 0.33,

@@ -19,6 +19,7 @@ BENCHMARKS = ("SPY", "^GSPC")
 
 @dataclass
 class Panel:
+    """Aligned (dates x tickers) OHLCV arrays, point-in-time membership and benchmark series."""
     dates: pd.DatetimeIndex
     tickers: pd.Index
     open: np.ndarray

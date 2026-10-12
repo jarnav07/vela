@@ -14,6 +14,7 @@ from scipy import stats
 
 
 class Model(Protocol):
+    """Interface shared by all models: ``fit`` with an optional time-ordered validation set, then ``predict``."""
     name: str
 
     def fit(self, X: np.ndarray, y: np.ndarray, X_val: np.ndarray | None = None,

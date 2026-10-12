@@ -13,6 +13,7 @@ from .research import ResearchData, StrategySpec, backtest_scores
 
 def cost_sensitivity(scores, data: ResearchData, spec: StrategySpec, start, end,
                      multipliers=(0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0), base: CostModel = CostModel()) -> pd.DataFrame:
+    """Net performance when every cost component is scaled by each multiplier (0 = frictionless)."""
     rows = []
     for k in multipliers:
         res = backtest_scores(scores, data, spec, base.scaled(k)).window(start, end)
@@ -35,6 +36,7 @@ def break_even_multiplier(sens: pd.DataFrame) -> float:
 
 def capacity(scores, data: ResearchData, spec: StrategySpec, start, end,
              aums=(1e5, 1e6, 1e7, 5e7, 1e8, 5e8), base: CostModel = CostModel()) -> pd.DataFrame:
+    """Net performance as strategy AUM grows: square-root impact scales with trade size relative to ADV."""
     rows = []
     for aum in aums:
         res = backtest_scores(scores, data, spec, replace(base, aum=aum)).window(start, end)
@@ -45,6 +47,7 @@ def capacity(scores, data: ResearchData, spec: StrategySpec, start, end,
 
 
 def yearly_table(net: pd.Series, bench: dict[str, pd.Series] | None = None) -> pd.DataFrame:
+    """Calendar-year return, Sharpe and max drawdown of ``net``, with benchmark returns alongside."""
     g = net.groupby(net.index.year)
     out = pd.DataFrame({
         "return": g.apply(lambda r: float(np.prod(1 + r) - 1)),
@@ -57,6 +60,7 @@ def yearly_table(net: pd.Series, bench: dict[str, pd.Series] | None = None) -> p
 
 
 def ic_by_year(scores, data: ResearchData, horizon: int, start, end) -> pd.Series:
+    """Mean daily rank IC of ``scores`` against the ``horizon``-day forward return, per calendar year."""
     m = (data.dates >= pd.Timestamp(start)) & (data.dates <= pd.Timestamp(end))
     ic = M.daily_rank_ic(scores[m], np.where(data.tradable, data.fwd(horizon), np.nan)[m])
     return pd.Series(ic, index=data.dates[m]).groupby(data.dates[m].year).mean()
