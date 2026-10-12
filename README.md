@@ -1,4 +1,4 @@
-# VELA: ML equity signals, vectorised backtesting and portfolio tracking
+# VELA - ML equity signals, vectorised backtesting and portfolio tracking
 
 VELA is a from-scratch research stack for **short-horizon cross-sectional equity prediction** on the
 S&P 500. It covers:
